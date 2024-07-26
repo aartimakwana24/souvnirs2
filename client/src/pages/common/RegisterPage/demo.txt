@@ -1,0 +1,190 @@
+     
+            <div className="d-flex gap-4">
+              <div className="d-flex flex-row align-items-center gap-4 form-control">
+                <span className="text-sm">Please select:</span>
+                <input
+                  type="radio"
+                  className="radio radio-error"
+                  name="option"
+                  id="buy"
+                  value="customer"
+                  //   defaultChecked={!query.get("sell")}
+                  //   {...register("option")}
+                />
+                <label className="label" htmlFor="buy">
+                  <span
+                    className="label-text text-uppercase fw-bold"
+                    style={{ fontSize: "87.50%" }}
+                  >
+                    Buy from Souvnirs
+                  </span>
+                </label>
+              </div>
+              <div className="d-flex flex-row align-items-center gap-4 form-control">
+                <input
+                  type="radio"
+                  className="radio radio-error"
+                  name="option"
+                  id="sell"
+                  value="vendor"
+                  //   defaultChecked={query.get("sell")}
+                  //   {...register("option")}
+                />
+                <label className="label" htmlFor="sell">
+                  <span className="label-text text-uppercase">
+                    Sell on Souvnirs
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div className="d-flex gap-4">
+              <div className="form-control w-50">
+                <label className="label" htmlFor="firstName">
+                  <span className="label-text">First Name</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-control bg-transparent border border-gray-700 rounded-4"
+                  placeholder="enter here"
+                  defaultValue={"Vishesh"}
+                  //   {...register("firstName")}
+                />
+                {/* {errors.firstName && ( */}
+                {/* <p className="text-red-500">{errors.firstName.message}</p> */}
+                {/* )} */}
+              </div>
+              <div className="form-control w-50">
+                <label className="label" htmlFor="lastName">
+                  <span className="label-text">Last Name</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-control bg-transparent border border-gray-700 rounded-4"
+                  placeholder="enter here"
+                  defaultValue={"Bajpayee"}
+                  //   {...register("lastName")}
+                />
+                {/* {errors.lastName && ( */}
+                {/* <p className="text-red-500">{errors.lastName.message}</p> */}
+                {/* )} */}
+              </div>
+            </div>
+            <div className="form-control">
+              <label className="label" htmlFor="email">
+                <span className="label-text">Email</span>
+              </label>
+              <input
+                type="text"
+                className="form-control bg-transparent border border-gray-700 rounded-4"
+                placeholder="ename@companyname.com"
+                defaultValue={"vishesh@souvnirs.com"}
+                // {...register("email")}
+              />
+              {/* {errors.email && (
+            )} */}
+              {/* <p className="text-red-500">{errors.email.message}</p> */}
+            </div>
+            <div className="d-flex gap-4">
+              <div className="form-control w-50">
+                <label className="label" htmlFor="password">
+                  <span className="label-text">Password</span>
+                </label>
+                <div className="position-relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className="form-control bg-transparent border border-gray-700 rounded-4"
+                    placeholder="Minimum 8 characters"
+                    defaultValue={"Qwerty@123"}
+                    // {...register("password")}
+                  />
+                  <button
+                    className="position-absolute top-50 end-0 translate-middle-y px-2 focus-outline-none"
+                    onClick={togglePasswordVisibility}
+                  >
+                    {/* {showPassword ? (
+                      <FaEyeSlash size={20} />
+                    ) : (
+                      <FaEye size={20} />
+                    )} */}
+                  </button>
+                </div>
+                {/* {errors.password && ( */}
+                {/* <p className="text-red-500">{errors.password.message}</p> */}
+                {/* )} */}
+              </div>
+              <div className="form-control w-50">
+                <label className="label" htmlFor="mobile">
+                  <span className="label-text">Mobile</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-control bg-transparent border border-gray-700 rounded-4"
+                  placeholder="enter without country code"
+                  defaultValue={"9876543210"}
+                  //   {...register("mobile")}
+                />
+                {/* {errors.mobile && ( */}
+                {/* <p className="text-red-500">{errors.mobile.message}</p> */}
+                {/* )} */}
+              </div>
+            </div>
+            <div className="d-flex flex-column mt-4">
+              <div className="d-flex align-items-center gap-4">
+                <div className="">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-error checked:bg-base-200"
+                  />
+                </div>
+                <p>
+                  Standard <span className="text-red-400">T&C</span> apply,
+                  Please check the box to proceed.
+                </p>
+              </div>
+            </div>
+            <div className="d-flex flex-column mt-4">
+              <div className="d-flex align-items-center gap-4">
+                <div className="">
+                  <input type="checkbox" className="checkbox checkbox-error" />
+                </div>
+                <p>
+                  I would like to receive emails on new products & offers. (we
+                  dont spam)
+                </p>
+              </div>
+            </div>
+            <div className="d-flex flex-column mt-4">
+              <div className="d-flex align-items-center gap-4">
+                <div className="form-control">
+                  <input type="checkbox" className="checkbox checkbox-error" />
+                </div>
+                <p>
+                  Happy to receive non-promotional Order updates on WhatsApp
+                </p>
+              </div>
+            </div>
+            <div className="d-flex mt-4">
+              {/* <button
+                className="btn btn-primary w-100 fw-bold py-3 px-4 hover:shadow-lg text-2xl"
+                onClick={handleSubmit(onSubmitFirstLevel)}
+              >
+                CREATE ACCOUNT
+              </button> */}
+
+              <button className="btn btn-primary w-100 fw-bold py-3 px-4 hover:shadow-lg text-2xl">
+                CREATE ACCOUNT
+              </button>
+            </div>
+          </div>
+
+
+
+
+
+
+
+
+          //figma -
+
+          https://www.figma.com/file/KreiGwZimkSDr4REqsHHNT/Souvnirs-Dashboard-Design?type=design&node-id=595-2724&mode=design&t=hVW2pYEk0e6T6K1w-0

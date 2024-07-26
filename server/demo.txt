@@ -1,0 +1,2041 @@
+import React, { useState, useEffect } from 'react';
+import { BsCaretDown } from 'react-icons/bs';
+import { GrFormClose } from 'react-icons/gr';
+import { AiFillInfoCircle } from 'react-icons/ai';
+import success, { debouncedShowToast, swalError } from '../../../utils/index';
+import SearchableDropdown from '../../../components/ui/SearchableDropdown/index.js';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { Tooltip } from 'react-tooltip';
+import useCategories from '../../../hook/useCategories';
+import Card from '../../../components/ui/Card/index.js';
+import API_WRAPPER from '../../../api/index.js';
+import { setProduct } from '../../../features/appConfig/addProductSlice.js';
+
+function AddProductAttributes({ formData, setFormData }) {
+  const [categoryId, setCategoryId] = useState("");
+  const [categoryName, setCategoryName] = useState("");
+  const [selectedAttributes, setSelectedAttributes] = useState([]);
+  const [attributeValues, setAttributeValues] = useState([]);
+  const [attSelected, setAttSelected] = useState(false);
+  const [showData, setShowData] = useState(false);
+  const [commission, setCommission] = useState(null);
+  const [attributesList, setAttributesList] = useState([]);
+  const [combinations, setCombinations] = useState([]);
+  const [variantData, setVariantData] = useState([]);
+  const [price, setPrice] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [catDropdown, setCatDropdown] = useState(false);
+
+  const p = useSelector((state) => state.product);
+  const categories = useCategories();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleSelectedValue = (category) => {
+    setCategoryId(category?.id);
+    setCategoryName(category?.name);
+    setSelectedAttributes([]);
+    dispatch(
+      setProduct({
+        ...formData,
+        categoryId: category.id,
+      })
+    );
+  };
+
+  const fetchAllAttributes = async () => {
+    try {
+      if (categoryId) {
+        const response = await API_WRAPPER.get(
+          `/attribute/get-all-attributes/${categoryId}`
+        );
+        setAttributesList(response?.data);
+      }
+    } catch (error) {
+      debouncedShowToast(error.message, "error");
+    }
+  };
+
+  const handleDataChange = (index, dataIndex, e) => {
+    const { name, value } = e.target;
+    setVariantData((prevVariantData) => {
+      const updatedVariantData = [...prevVariantData];
+      updatedVariantData[index].data[dataIndex][name] = value;
+      return updatedVariantData;
+    });
+  };
+
+  const handleTableInputChange = (e, index, field) => {
+    const value = e.target.value;
+
+    setVariantData((prevData) => {
+      const updatedData = [...prevData];
+      updatedData[index][field] = value;
+      return updatedData;
+    });
+  };
+
+  const generateValueCombinations = () => {
+    const combination = [];
+    function generateCombinations(
+      attributes,
+      index = 0,
+      current = {},
+      result = []
+    ) {
+      if (index === attributes.length) {
+        result.push(current);
+        return;
+      }
+
+      const attribute = attributes[index];
+      for (const value of attribute.values) {
+        const newCurrent = {
+          ...current,
+          [attribute.name]: value,
+        };
+        generateCombinations(attributes, index + 1, newCurrent, result);
+      }
+      return result;
+    }
+
+    combination.push(...generateCombinations(attributeValues));
+    setCombinations(combination);
+  };
+
+  const isEqualVariants = (variant1, variant2) => {
+    return JSON.stringify(variant1) === JSON.stringify(variant2);
+  };
+
+  const handleAtttributeValueSelection = (e, attribute) => {
+    if (e.key === "Enter") {
+      const existingIndex = attributeValues.findIndex(
+        (item) => item.id === attribute._id
+      );
+
+      const newEntry = {
+        name: attribute.name,
+        id: attribute._id,
+        values: [e.target.value],
+      };
+
+      if (existingIndex !== -1) {
+        const updatedAttributeValues = [...attributeValues];
+        updatedAttributeValues[existingIndex].values.push(e.target.value);
+        setAttributeValues(updatedAttributeValues);
+      } else {
+        setAttributeValues((prevValues) => [...prevValues, newEntry]);
+      }
+      e.target.value = "";
+    }
+  };
+
+  const scrollToSection = () => {
+    const targetElement = document.getElementById("selectedattributes");
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const convertAttributesList = (arr) => {
+    return arr.map(({ _id, name }) => ({
+      label: name,
+      value: _id,
+    }));
+  };
+
+  const attributeSelection = (e) => {
+    const selectedAttribute = attributesList.find(
+      (att) => att._id === e.target.value
+    );
+
+    if (!selectedAttributes.some((att) => att._id === selectedAttribute._id)) {
+      setSelectedAttributes((prevSelectedAttributes) => [
+        ...prevSelectedAttributes,
+        selectedAttribute,
+      ]);
+      scrollToSection();
+    }
+  };
+
+  const removeAttributeValue = (attributeId, valueIndex) => {
+    setAttributeValues((prevValues) => {
+      const updatedAttributeValues = prevValues.map((elem) => {
+        if (elem.id === attributeId) {
+          const newValues = elem.values.filter(
+            (_, index) => index !== valueIndex
+          );
+          return {
+            ...elem,
+            values: newValues,
+          };
+        }
+        return elem;
+      });
+      return updatedAttributeValues;
+    });
+  };
+
+  useEffect(() => {
+    fetchAllAttributes();
+  }, [categoryId]);
+
+  const handleDataSubmit = async () => {
+    if (!p.name || !p.vendorId || !p.categoryId) {
+      swalError("Validation Error", "Fill all required fields");
+      return;
+    }
+
+    try {
+      const prodResponse = await API_WRAPPER.post("/products/add-product", p);
+      const productId = prodResponse.data._id;
+      const response = await API_WRAPPER.post("/varients/add-varients", {
+        combinations,
+        productId
+      });
+    } catch (error) {
+      console.log("Error in catch :-- ", error);
+    }
+  };
+
+  useEffect(() => {
+    if (combinations.length > 0) {
+      handleDataSubmit();
+    }
+  }, [combinations]);
+
+  return (
+    <>
+      <div className="container">
+        <div className="row">
+          <div className="col">
+            <div className="">
+              <div className="row p-2">
+                <div className="col-lg-6 col-md-12 col-12">
+                  <div className="bg-light rounded">
+                    <SearchableDropdown
+                      handleSelect={handleSelectedValue}
+                      items={categories}
+                      categoryName={categoryName}
+                    />
+                  </div>
+                </div>
+                <div className="col-lg-6 col-md-12 col-12">
+                  {categoryId && (
+                    <select
+                      onChange={attributeSelection}
+                      className="form-select form-select-lg mb-3"
+                    >
+                      <option value="">Select an attribute</option>
+                      {attributesList.map((attribute) => (
+                        <option key={attribute._id} value={attribute._id}>
+                          {attribute.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </div>
+              <div id="selectedattributes">
+                {selectedAttributes.length > 0 && (
+                  <div className="m-3">
+                    {selectedAttributes.map((attribute) => (
+                      <div key={attribute._id} className="mb-3">
+                        <div className="d-flex align-items-center">
+                          <h5 className="me-2">{attribute.name}:</h5>
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Enter attribute value"
+                            onKeyDown={(e) =>
+                              handleAtttributeValueSelection(e, attribute)
+                            }
+                          />
+                        </div>
+                        <div className="mt-2">
+                          {attributeValues
+                            .find((item) => item.id === attribute._id)
+                            ?.values.map((value, index) => (
+                              <span
+                                key={index}
+                                className="badge bg-primary me-2"
+                              >
+                                {value}{" "}
+                                <GrFormClose
+                                  onClick={() =>
+                                    removeAttributeValue(attribute._id, index)
+                                  }
+                                  style={{ cursor: "pointer" }}
+                                />
+                              </span>
+                            ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {attributeValues.length > 0 && (
+                <div className="d-flex justify-content-center mt-4">
+                  <button
+                    className="btn btn-primary"
+                    onClick={generateValueCombinations}
+                  >
+                    Generate Variants
+                  </button>
+                </div>
+              )}
+              {variantData.length > 0 && (
+                <div className="mt-4">
+                  <h3>Generated Variants</h3>
+                  {variantData.map((variant, index) => (
+                    <div key={index} className="mb-3">
+                      <h5>Variant {index + 1}:</h5>
+                      {Object.entries(variant).map(([attribute, value]) => (
+                        <div key={attribute} className="mb-2">
+                          <strong>{attribute}:</strong> {value}
+                        </div>
+                      ))}
+                      <div className="d-flex align-items-center">
+                        <label className="me-2">Price:</label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          value={variant.price || ""}
+                          onChange={(e) =>
+                            handleTableInputChange(e, index, "price")
+                          }
+                        />
+                      </div>
+                      <div className="d-flex align-items-center mt-2">
+                        <label className="me-2">Quantity:</label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          value={variant.quantity || ""}
+                          onChange={(e) =>
+                            handleTableInputChange(e, index, "quantity")
+                          }
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    className="btn btn-success mt-4"
+                    onClick={handleDataSubmit}
+                  >
+                    Submit
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+export default AddProductAttributes;
+
+
+
+export const getProductVariants = async (req, res) => {
+  try {
+    console.log("req.params :- ", req.params);
+    const { productId } = req.params;
+
+    // Fetch the product variants
+    const products = await productVarients.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(productId),
+        },
+      },
+      {
+        $lookup: {
+          from: "Product",
+          localField: "pid",
+          foreignField: "_id",
+          as: "result",
+        },
+      },
+    ]);
+
+    let _id = products[0].result[0].vendorId.toString();
+    let cid = products[0].result[0].categoryId.toString();
+    let vName = (await vendorModal.findOne({ _id })).firstName;
+    let catData = await categoriesModal.findOne({ _id: cid });
+
+    // Fetch the attribute names and details
+    const attributeIds = catData.attributes;
+    const attributes = await attributeModal.find({
+      _id: { $in: attributeIds },
+    });
+
+    catData.attributes = attributes;
+
+    products[0].vName = vName;
+    products[0].catData = catData;
+
+    console.log("Product data :--- ", products[0]);
+    res.status(200).json(products[0]);
+  } catch (error) {
+    console.log("Error in getProductVariants ", error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
+
+..............
+import AttributeType from '../models/AttributeType'; // Assuming the file path
+
+export const addAttributeValues = async (req, res) => {
+  try {
+    const { productId, attributes } = req.body;
+
+    if (!productId || !Array.isArray(attributes)) {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
+
+    const savedAttributes = await Promise.all(attributes.map(async (attr) => {
+      const newAttribute = new AttributeType({
+        paid: attr.id,
+        pid: productId,
+        attvalue: attr.values,
+        Status: "ACTIVE"
+      });
+
+      return await newAttribute.save();
+    }));
+
+    res.status(201).json(savedAttributes);
+  } catch (error) {
+    console.log("Error adding attribute values: ", error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+-----------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------
+
+
+import { PATHS } from "../../../Routes/paths";
+import { useState, useEffect } from "react";
+import { BsCaretDown } from "react-icons/bs";
+import { GrFormClose } from "react-icons/gr";
+import { AiFillInfoCircle } from "react-icons/ai";
+import SearchableDropdown from "../../../components/ui/SearchableDropdown/EditIndex.js";
+import { useDispatch, useSelector } from "react-redux";
+import { Tooltip } from "react-tooltip";
+import useCategories from "../../../hook/useCategories";
+import Header from "../../../components/ui/Header/index.js";
+import { nanoid } from "@reduxjs/toolkit";
+import { motion } from "framer-motion";
+import { fadeInFromLeftVariant } from "../../../animations/index.js";
+import success from "../../../utils/index.js";
+import {
+  Link,
+  Navigate,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
+import Card from "../../../components/ui/Card/index.js";
+import API_WRAPPER from "../../../api/index.js";
+import { setProduct } from "../../../features/appConfig/addProductSlice.js";
+import { swalError } from "../../../utils/index.js";
+
+function EditProduct() {
+  const [categoryId, setCategoryId] = useState("");
+  const [categoryName, setCategoryName] = useState("");
+  const [productName, setProductName] = useState("");
+  const [vendorName, setVendorName] = useState("");
+  const [selectedAttributes, setSelectedAttributes] = useState([]);
+  const [attributeValues, setAttributeValues] = useState([]);
+  const [attSelected, setAttSelected] = useState(false);
+  const [showData, setShowData] = useState(false);
+  const [vendorsList, setVendorsList] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [formData, setFormData] = useState({});
+  const [attributesList, setAttributesList] = useState([]);
+  const [combinations, setCombinations] = useState([]);
+  const [variantData, setVariantData] = useState([]);
+  const [price, setPrice] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [catDropdown, setCatDropdown] = useState(false);
+
+  const p = useSelector((state) => state.product);
+  const categories = useCategories();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({ ...prevData, [name]: value }));
+  };
+
+  const getAllVendors = async () => {
+    try {
+      const response = await API_WRAPPER.get("/vendors/get-vendors");
+      if (response.status === 200) {
+        setVendorsList(response?.data?.data);
+      }
+    } catch (error) {
+      console.error("Error occurred while getting all vendors", error);
+    }
+  };
+
+  const handleSelectedValue = (category) => {
+    setCategoryId(category?.id);
+    setCategoryName(category?.name);
+    setSelectedAttributes([]);
+  };
+
+  const { id } = useParams();
+  const [query] = useSearchParams();
+
+  const fetchAllAttributes = async () => {
+    try {
+      if (categoryId) {
+        const response = await API_WRAPPER.get(
+          `/attribute/get-all-attributes/${categoryId}`
+        );
+        setAttributesList(response?.data);
+      }
+    } catch (error) {
+      console.log("Error in fetchAllAttributes in edit product ", error);
+    }
+  };
+
+  const scrollToSection = () => {
+    const targetElement = document.getElementById("selectedattributes");
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const attributeSelection = (e) => {
+    const selectedAttribute = attributesList.find(
+      (att) => att._id === e.target.value
+    );
+
+    if (!selectedAttributes.some((att) => att._id === selectedAttribute._id)) {
+      setSelectedAttributes((prevSelectedAttributes) => [
+        ...prevSelectedAttributes,
+        selectedAttribute,
+      ]);
+      scrollToSection();
+    }
+  };
+
+  const convertAttributesList = (arr) => {
+    return arr.map(({ _id, name }) => ({
+      label: name,
+      value: _id,
+    }));
+  };
+
+  const isEqualVariants = (variant1, variant2) => {
+    return JSON.stringify(variant1) === JSON.stringify(variant2);
+  };
+
+  const generateValueCombinations = () => {
+    const combination = [];
+    function generateCombinations(
+      attributes,
+      index = 0,
+      current = {},
+      result = []
+    ) {
+      if (index === attributes.length) {
+        result.push(current);
+        return;
+      }
+
+      const attribute = attributes[index];
+      for (const value of attribute.values) {
+        const newCurrent = {
+          ...current,
+          [attribute.name]: value,
+        };
+        generateCombinations(attributes, index + 1, newCurrent, result);
+      }
+      return result;
+    }
+
+    combination.push(...generateCombinations(attributeValues));
+    setCombinations(combination);
+  };
+
+  const removeAttributeValue = (attributeId, valueIndex) => {
+    setAttributeValues((prevValues) => {
+      const updatedAttributeValues = prevValues.map((elem) => {
+        if (elem.id === attributeId) {
+          const newValues = elem.values.filter(
+            (_, index) => index !== valueIndex
+          );
+          return {
+            ...elem,
+            values: newValues,
+          };
+        }
+        return elem;
+      });
+      return updatedAttributeValues;
+    });
+  };
+
+  const handleAttributeValueSelection = (e, attribute) => {
+    if (e.key === "Enter") {
+      const existingIndex = attributeValues.findIndex(
+        (item) => item.id === attribute._id
+      );
+
+      const newEntry = {
+        name: attribute.name,
+        id: attribute._id,
+        values: [e.target.value],
+      };
+
+      if (existingIndex !== -1) {
+        const updatedAttributeValues = [...attributeValues];
+        updatedAttributeValues[existingIndex].values.push(e.target.value);
+        setAttributeValues(updatedAttributeValues);
+      } else {
+        setAttributeValues((prevValues) => [...prevValues, newEntry]);
+      }
+      e.target.value = "";
+    }
+  };
+
+  const getProductVariants = async () => {
+    try {
+      const response = await API_WRAPPER.get(`/product/variants/${id}`);
+      const productData = response.data;
+      setProductName(productData.result[0].name);
+      setVendorName(productData.vName);
+      setCategoryName(productData.catData.name);
+      setCategoryId(productData.result[0].categoryId);
+      setSelectedAttributes(productData.catData.attributes);
+      fetchAllAttributes();
+
+      const attributeMap = {};
+      productData.varients.forEach((variant) => {
+        Object.entries(variant).forEach(([key, value]) => {
+          if (!attributeMap[key]) {
+            attributeMap[key] = new Set();
+          }
+          attributeMap[key].add(value);
+        });
+      });
+
+      const attributeValuesArray = Object.entries(attributeMap).map(
+        ([key, values]) => ({
+          name: key,
+          id: key,
+          values: Array.from(values),
+        })
+      );
+
+      setAttributeValues(attributeValuesArray);
+    } catch (error) {
+      console.log("Error in getProductVariants in editProduct.js ", error);
+    }
+  };
+
+  useEffect(() => {
+    getProductVariants();
+  }, []);
+
+  useEffect(() => {
+    getAllVendors();
+  }, []);
+
+  useEffect(() => {
+    fetchAllAttributes();
+  }, [categoryId]);
+
+  return (
+    <div className="container my-3">
+      <div className="row">
+        <div className="col">
+          <Header
+            heading="Edit Products"
+            subheading="Lorem Ipsum is simply dummy text of the printing and typesetting industry."
+          />
+          <div className="w-full mt-5">
+            <div className="row">
+              <div className="col col-lg-7 col-md-12 col-12 me-5 ms-lg-3 bg-light p-4 rounded border my-1">
+                <hr className="mt-4" />
+                <div className="form-group mt-4">
+                  <label htmlFor="productName" className="form-label">
+                    Product Title<span className="text-danger">*</span>
+                  </label>
+                  <input
+                    onChange={(e) => handleInputChange(e)}
+                    className="form-control"
+                    type="text"
+                    name="name"
+                    id="productName"
+                    defaultValue={productName}
+                  />
+                </div>
+              </div>
+              <div className="col col-lg-4 col-md-12 col-12 bg-light rounded border p-4 my-1">
+                <hr className="mt-4" />
+                <div className="form-group mt-4">
+                  <label htmlFor="vendorName" className="form-label">
+                    Vendor
+                  </label>
+                  <input
+                    onChange={(e) => handleInputChange(e)}
+                    className="form-control"
+                    type="text"
+                    name="vName"
+                    id="vendorName"
+                    defaultValue={vendorName}
+                    disabled
+                  />
+                </div>
+                <div className="form-group mt-4">
+                  <label htmlFor="vendorName" className="form-label">
+                    Category
+                  </label>
+                  <input
+                    className="form-control"
+                    type="text"
+                    name="categoryId"
+                    id="categoryId"
+                    value={categoryName}
+                    disabled
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="row mt-4">
+              <div className="col col-lg-7 col-md-12 col-12 me-5 ms-lg-3 bg-light p-4 rounded border my-1">
+                <div className="form-group mt-4">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <label className="form-label mb-0">Add Attributes</label>
+                  </div>
+                  <select
+                    className="form-control mt-3"
+                    id="attributes"
+                    onChange={(e) => attributeSelection(e)}
+                  >
+                    <option value="">Select an Attribute</option>
+                    {attributesList.map((attribute) => (
+                      <option key={attribute._id} value={attribute._id}>
+                        {attribute.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedAttributes.length > 0 && (
+                  <div className="mt-4" id="selectedattributes">
+                    <h5>Selected Attributes</h5>
+                    <ul className="list-group mt-3">
+                      {selectedAttributes.map((attribute) => (
+                        <li
+                          key={attribute._id}
+                          className="list-group-item d-flex justify-content-between align-items-center"
+                        >
+                          {attribute.name}
+                          <input
+                            type="text"
+                            className="form-control mt-2"
+                            onKeyDown={(e) =>
+                              handleAttributeValueSelection(e, attribute)
+                            }
+                            placeholder={`Enter ${attribute.name}`}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {attributeValues.length > 0 && (
+                  <div className="mt-4">
+                    <h5>Attribute Values</h5>
+                    {attributeValues.map((attribute) => (
+                      <div key={attribute.id} className="mb-3">
+                        <label className="form-label">{attribute.name}</label>
+                        <ul className="list-group">
+                          {attribute.values.map((value, index) => (
+                            <li
+                              key={index}
+                              className="list-group-item d-flex justify-content-between align-items-center"
+                            >
+                              {value}
+                              <button
+                                type="button"
+                                className="btn btn-danger btn-sm"
+                                onClick={() =>
+                                  removeAttributeValue(attribute.id, index)
+                                }
+                              >
+                                Remove
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="col col-lg-4 col-md-12 col-12 bg-light p-4 rounded border my-1">
+                <div className="form-group mt-4">
+                  <label className="form-label">
+                    Variant Combinations
+                  </label>
+                  <button
+                    className="btn btn-primary mt-2"
+                    onClick={generateValueCombinations}
+                  >
+                    Generate Combinations
+                  </button>
+                  {combinations.length > 0 && (
+                    <div className="mt-3">
+                      {combinations.map((combination, index) => (
+                        <div key={index} className="mb-3">
+                          {Object.entries(combination).map(([key, value]) => (
+                            <div key={key}>
+                              <strong>{key}:</strong> {value}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="form-group mt-4">
+                  <label htmlFor="price" className="form-label">
+                    Price
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="price"
+                    name="price"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group mt-4">
+                  <label htmlFor="quantity" className="form-label">
+                    Quantity
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="quantity"
+                    name="quantity"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group mt-4">
+                  <button
+                    type="submit"
+                    className="btn btn-success"
+                    onClick={/* Add your submit handler here */}
+                  >
+                    Save Product
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default EditProduct;
+
+
+
+
+
+
+
+
+
+ <div className="col-12 d-flex justify-content-end">
+                  <button
+                    className="btn btn-primary mt-4"
+                    onClick={generateValueCombinations}
+                  >
+                    Generate Combinations
+                  </button>
+                </div>
+                <div className="col-12 mt-4">
+                  {combinations.length > 0 && (
+                    <>
+                      <h5>Generated Combinations</h5>
+                      <table className="table table-striped">
+                        <thead>
+                          <tr>
+                            {Object.keys(combinations[0]).map((key) => (
+                              <th key={key}>{key}</th>
+                            ))}
+                            <th>Price</th>
+                            <th>Quantity</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {combinations.map((combination, index) => (
+                            <tr key={index}>
+                              {Object.values(combination).map((value, i) => (
+                                <td key={i}>{value}</td>
+                              ))}
+                              <td>
+                                <input
+                                  type="number"
+                                  className="form-control"
+                                  name={`price-${index}`}
+                                  onChange={(e) => {
+                                    const newVariantData = [...variantData];
+                                    newVariantData[index] = {
+                                      ...newVariantData[index],
+                                      price: e.target.value,
+                                    };
+                                    setVariantData(newVariantData);
+                                  }}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  className="form-control"
+                                  name={`quantity-${index}`}
+                                  onChange={(e) => {
+                                    const newVariantData = [...variantData];
+                                    newVariantData[index] = {
+                                      ...newVariantData[index],
+                                      quantity: e.target.value,
+                                    };
+                                    setVariantData(newVariantData);
+                                  }}
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </>
+                  )}
+                </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+in this code i want to bring new data from backend so firstly store it into formData when user have to change any field this is up editPage i want to update it
+import { PATHS } from "../../../Routes/paths";
+import { useState, useEffect } from "react";
+import { BsCaretDown } from "react-icons/bs";
+import { GrFormClose } from "react-icons/gr";
+import { AiFillInfoCircle } from "react-icons/ai";
+import SearchableDropdown from "../../../components/ui/SearchableDropdown/EditIndex.js";
+import { useDispatch, useSelector } from "react-redux";
+import { Tooltip } from "react-tooltip";
+import useCategories from "../../../hook/useCategories";
+import Header from "../../../components/ui/Header/index.js";
+import { nanoid } from "@reduxjs/toolkit";
+import { motion } from "framer-motion";
+import { fadeInFromLeftVariant } from "../../../animations/index.js";
+import success from "../../../utils/index.js";
+import React from "react";
+import {Form, Link,Navigate,  useNavigate, useParams,useSearchParams,} from "react-router-dom";
+import Card from "../../../components/ui/Card/index.js";
+import API_WRAPPER from "../../../api/index.js";
+import { setProduct } from "../../../features/appConfig/addProductSlice.js";
+import { swalError } from "../../../utils/index.js";
+
+function EditProduct() {
+  const [categoryId, setCategoryId] = useState("");
+  const [categoryName, setCategoryName] = useState("");
+  const [productName, setProductName] = useState("");
+  const [vendoreName, setVendoreName] = useState("");
+  const [selectedAttributes, setSelectedAttributes] = useState([]);
+  const [attributeValues, setAttributeValues] = useState([]);
+  const [attSelected, setAttSelected] = useState(false);
+  const [showData, setShowData] = useState(false);
+  const [vendorsList, setVendorsList] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [formData, setFormData] = useState({});
+  const [attributesList, setAttributesList] = useState([]);
+  const [combinations, setCombinations] = useState([]);
+  const [variantData, setVariantData] = useState([]);
+  const [varientsList, setVarientsList] = useState([]);
+  const [price, setPrice] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [catDropdown, setCatDropdown] = useState(false);
+
+  const p = useSelector((state) => state.product);
+  const categories = useCategories();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({ ...prevData, [name]: value }));
+    console.log("Form Data ", formData);
+  };
+
+  const getAllVendors = async () => {
+    try {
+      const response = await API_WRAPPER.get("/vendors/get-vendors");
+      if (response.status === 200) {
+        setVendorsList(response?.data?.data);
+      }
+    } catch (error) {
+      console.error("Error occured while getting all vendors", error);
+    }
+  };
+
+  const handleSelectedValue = (category) => {
+    setCategoryId(category?.id);
+    setCategoryName(category?.name);
+    setSelectedAttributes([]);
+    setFormData({
+      ...formData,
+      categoryId: category?.id,
+      categoryName: category?.name,
+      selectedAttributes: [],
+    });
+  };
+
+  const { id } = useParams();
+  const [query] = useSearchParams();
+
+  const fetchAllAttributes = async () => {
+    try {
+      if (categoryId) {
+        const response = await API_WRAPPER.get(
+          `/attribute/get-all-attributes/${categoryId}`
+        );
+        console.log("response data :- ", response);
+        setAttributesList(response?.data);
+      }
+    } catch (error) {
+      console.log("Error in fetchAllAttributes in edit product ", error);
+    }
+  };
+
+  const scrollToSection = () => {
+    const targetElement = document.getElementById("selectedattributes");
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+   const attributeSelection = (e) => {
+     const selectedAttribute = attributesList.find(
+       (att) => att._id === e.target.value
+     );
+
+     const currentSelectedAttributes = formData.selectedAttributes || [];
+     if (
+       !currentSelectedAttributes.some(
+         (att) => att._id === selectedAttribute._id
+       )
+     ) {
+       const updatedSelectedAttributes = [
+         ...currentSelectedAttributes,
+         selectedAttribute,
+       ];
+       setFormData((prevFormData) => ({
+         ...prevFormData,
+         selectedAttributes: updatedSelectedAttributes,
+       }));
+       scrollToSection();
+     }
+   };
+
+  const convertAttributesList = (arr) => {
+    return arr.map(({ _id, name }) => ({
+      label: name,
+      value: _id,
+    }));
+  };
+
+  const isEqualVariants = (variant1, variant2) => {
+    return JSON.stringify(variant1) === JSON.stringify(variant2);
+  };
+
+  const removeAttributeValue = (attributeName, valueToRemove) => {
+    setAttributeValues((prevValues) => {
+      const updatedValues = {
+        ...prevValues,
+        [attributeName]: prevValues[attributeName].map(
+          (value) =>
+            Array.isArray(value)
+              ? value.filter((item) => item !== valueToRemove)
+              : value !== valueToRemove
+              ? value
+              : null // If the value is equal to the valueToRemove, replace it with null
+        ),
+      };
+      return updatedValues;
+    });
+  };
+  const handleAtttributeValueSelection = (e, att) => {
+    if (e.key === "Enter") {
+      const newValue = e.target.value.trim();
+      if (newValue) {
+        setAttributeValues((prevValues) => ({
+          ...prevValues,
+          [att.name]: [...(prevValues[att.name] || []), newValue],
+        }));
+        e.target.value = ""; // Clear the input field after adding the value
+      }
+    }
+  };
+  const getProductVariants = async () => {
+    try {
+      const response = await API_WRAPPER.get(`/product/variants/${id}`);
+      const productData = response.data;
+      console.log("response.data khali :- ", productData.showVarients.varients);
+      setProductName(productData.result[0].name);
+      setVendoreName(productData.vName);
+      setProduct(productData);
+      setCategoryName(productData.catData.name);
+      setCategoryId(productData.result[0].categoryId);
+      setSelectedAttributes(productData.attributeObjects);
+      fetchAllAttributes();
+      setCombinations(productData.showVarients.varients);
+      const uniqueAttributes = {};
+      const attributeMap = {};
+
+      productData.varients.forEach((variant) => {
+        Object.entries(variant).forEach(([key, value]) => {
+          if (!attributeMap[key]) {
+            attributeMap[key] = new Set();
+          }
+          attributeMap[key].add(value);
+        });
+      });
+
+      setAttributeValues(productData.attValues);
+    } catch (error) {
+      console.log("Error in getProductVariants in editProduct.js ", error);
+    }
+  };
+
+  useEffect(() => {
+    getProductVariants();
+  }, []);
+
+  useEffect(() => {
+    getAllVendors();
+  }, []);
+
+  useEffect(() => {
+    fetchAllAttributes();
+  }, [categoryId]);
+
+  const handleSubmitUpdate = async()=>{
+   try {
+    
+   } catch (error) {
+    console.log("Error in handleSubmitUpdate ",error);
+   }
+  }
+  return (
+    <>
+      <div className="container my-3">
+        <div className="row">
+          <div className="col">
+            <Header
+              heading="Edit Products"
+              subheading="Lorem Ipsum is simply dummy text of the printing and typesetting industry. isadjv oiasreoi ihusdf bquhwdi euh."
+            />
+            <div className="w-full mt-5">
+              <form>
+                <div className="row">
+                  <div className="col col-lg-7 col-md-12 col-12 me-5 ms-lg-3 bg-light p-4 rounded border my-1">
+                    <hr className="mt-4" />
+                    <div className="form-group mt-4">
+                      <label htmlFor="productName" className="form-label">
+                        Product Title<span className="text-danger">*</span>
+                      </label>
+                      <input
+                        onChange={(e) => handleInputChange(e)}
+                        className="form-control"
+                        type="text"
+                        name="name"
+                        id="productName"
+                        defaultValue={productName}
+                      />
+                    </div>
+                  </div>
+                  <div className="col col-lg-4 col-md-12 col-12  bg-light rounded border p-4 my-1">
+                    <hr className="mt-4" />
+                    <div className="form-group mt-4">
+                      <label className="label">
+                        <span className="label-text">
+                          Vendor<span className="text-danger">*</span>
+                        </span>
+                      </label>
+                      <select
+                        onChange={(e) => handleInputChange(e)}
+                        className="form-select form-select-lg"
+                        name="vendorId"
+                        value={formData?.vendorId}
+                      >
+                        <option value="" disabled selected>
+                          {vendoreName}
+                        </option>
+                        {vendorsList?.map((vendor) => {
+                          return (
+                            <option key={nanoid()} value={vendor._id}>
+                              {vendor?.firstName
+                                ? vendor.firstName
+                                : vendor?.email}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </form>
+              <div className="row mt-4">
+                <div className="col col-lg-12 col-md-12 col-12 me-5 ms-lg-3 bg-light  p-4 rounded border my-1">
+                  <motion.div
+                    variants={fadeInFromLeftVariant}
+                    animate="animate"
+                    initial="initial"
+                    className="bg-light"
+                  >
+                    <h4>Add Categories Here</h4>
+                    <div className="container">
+                      <div className="row">
+                        <div className="col">
+                          {/* {!attSelected && !showData ? ( */}
+                          <div className="">
+                            <div className="row p-2">
+                              <div className="col-lg-6 col-md-12 col-12 ">
+                                <div className="bg-light rounded">
+                                  <SearchableDropdown
+                                    handleSelect={handleSelectedValue}
+                                    items={categories}
+                                    categoryName={categoryName}
+                                  />
+                                </div>
+                              </div>
+                              {categoryId && (
+                                <div className="col-lg-6 col-md-12 col-12">
+                                  <Card>
+                                    <div className="p-2">
+                                      <div className="d-lg-flex ">
+                                        <div className="col col-lg-9 col-md-3 col-12">
+                                          <p className="fw-bold">
+                                            Select Attributes: (Optional){" "}
+                                          </p>
+                                        </div>
+                                        <div className="col col-lg-2 col-md-6 col-12">
+                                          <AiFillInfoCircle className="fs-4 my-2" />
+                                        </div>
+                                        <div className="col col-lg-2 col-md-3 col-12">
+                                          <div className="dropdown dropdown-left">
+                                            <button
+                                              className="btn btn-circle"
+                                              id="dropdownMenuButton1"
+                                              data-bs-toggle="dropdown"
+                                              aria-expanded="false"
+                                            >
+                                              <BsCaretDown className="text-primary fs-3 " />
+                                            </button>
+                                            <ul className="dropdown-menu ">
+                                              <li className="">
+                                                <select
+                                                  className="form-select"
+                                                  name=""
+                                                  onChange={(e) => {
+                                                    attributeSelection(e);
+                                                  }}
+                                                  multiple={true}
+                                                >
+                                                  {convertAttributesList(
+                                                    attributesList
+                                                  ).map((item) => (
+                                                    <option
+                                                      className="cursor-pointer border-1 shadow-lg rounded my-3 py-2 me-4 px-lg-2"
+                                                      key={item.value}
+                                                      value={item.value}
+                                                    >
+                                                      {item.label}
+                                                    </option>
+                                                  ))}
+                                                </select>  </li>  </ul>    </div>  </div>  </div>
+                                    </div>
+                                    <Tooltip
+                                      effect="solid"
+                                      id="my-tooltip"
+                                      style={{
+                                        zIndex: 9999,
+                                        background: "#4680ff36",
+                                      }} /> </Card>  </div> )} </div>
+
+                            <div id="selectedattributes" className="mx-4">
+                              {selectedAttributes.length > 0 && (
+                                <Card id="selectedAtt" className="w-full">
+                                  <div className="d-flex align-items-center p-4">
+                                    <label className="fw-bold me-4">
+                                      Selected Attributes:
+                                    </label>
+                                    <div className="position-relative">
+                                      <div className="tooltip-text d-inline">
+                                        Enter values for selected attributes,
+                                        press enter to select.
+                                      </div>
+                                      <AiFillInfoCircle className="fs-3 me-1 d-inline ms-2" />
+                                    </div>
+                                  </div>
+                                  {/* {selectedAttributes.map((att) => (
+                                  <div className="p-1 mx-2">
+                                    <div className="d-flex justify-content-between bg-light rounded mb-2 p-2">
+                                      <div className="d-flex align-items-center">
+                                        <span className="fw-bold me-lg-5">
+                                          {att.name}:
+                                        </span>
+                                     
+                                        <input
+                                          placeholder="Enter attribute values"
+                                          className="form-control form-control-sm"
+                                          name={att._id}
+                                          onKeyDown={(e) =>
+                                            handleAtttributeValueSelection(
+                                              e,
+                                              att
+                                            )
+                                          }
+                                        />
+                                      </div>
+
+                                      <div className="d-flex gap-2">
+                                        {attributeValues.map((elem) => {
+                                          if (elem.id === att._id) {
+                                            return elem?.values?.map(
+                                              (a, index) => (
+                                                <div
+                                                  className="d-flex gap-2 align-items-center bg-light rounded-full"
+                                                  onClick={(e) =>
+                                                    removeAttributeValue(
+                                                      att._id,
+                                                      index
+                                                    )
+                                                  }
+                                                  key={index}
+                                                >
+                                                  {a}
+                                                  <button className="btn btn-xs btn-circle btn-error">
+                                                    <GrFormClose className="text-xl text-base-100" />
+                                                  </button>
+                                                </div>
+                                              )
+                                            );
+                                          }
+                                          return null;
+                                        })}
+                                      </div>
+                                      <div className="d-flex gap-2">
+                                        {selectedAttributes.map((att) => (
+                                          <div
+                                            key={att._id}
+                                            className="d-flex gap-2"
+                                          >
+                                            {attributeValues[att.name]?.map(
+                                              (value, index) => (
+                                                <div
+                                                  key={index}
+                                                  className="d-flex gap-2 align-items-center bg-light rounded-full"
+                                                  onClick={() =>
+                                                    removeAttributeValue(
+                                                      att.name,
+                                                      index
+                                                    )
+                                                  }
+                                                >
+                                                  {value}
+                                                  <button className="btn btn-xs btn-circle btn-error">
+                                                    <GrFormClose className="text-xl text-base-100" />
+                                                  </button>
+                                                </div>
+                                              )
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))} */}
+
+                                  {selectedAttributes.map((att) => (
+                                    <div className="p-1 mx-2" key={att._id}>
+                                      <div className="d-flex justify-content-between bg-light rounded mb-2 p-2">
+                                        <div className="d-flex align-items-center">
+                                          <span className="fw-bold me-lg-5">
+                                            {att.name}:
+                                          </span>
+                                          <input
+                                            placeholder="Enter attribute values"
+                                            className="form-control form-control-sm"
+                                            name={att._id}
+                                            onKeyDown={(e) =>
+                                              handleAtttributeValueSelection(
+                                                e,
+                                                att
+                                              )
+                                            }
+                                          />
+                                        </div>
+                                        <div className="d-flex gap-2">
+                                          {attributeValues[att.name]?.map(
+                                            (value, index) => (
+                                              <div
+                                                key={index}
+                                                className="d-flex gap-2 align-items-center bg-light rounded-full"
+                                                onClick={() =>
+                                                  removeAttributeValue(
+                                                    att.name,
+                                                    index
+                                                  )
+                                                }
+                                              >
+                                                {Array.isArray(value) ? (
+                                                  value.map(
+                                                    (item, subIndex) => (
+                                                      <div
+                                                        key={subIndex}
+                                                        className="d-flex gap-2 align-items-center bg-light rounded-full"
+                                                      >
+                                                        {typeof item ===
+                                                        "string" ? (
+                                                          <React.Fragment
+                                                            key={subIndex}
+                                                          >
+                                                            {item}
+                                                            <button
+                                                              className="btn btn-xs btn-circle btn-error"
+                                                              onClick={() =>
+                                                                removeAttributeValue(
+                                                                  att.name,
+                                                                  item
+                                                                )
+                                                              }
+                                                            >
+                                                              <GrFormClose className="text-xl text-base-100" />
+                                                            </button>
+                                                          </React.Fragment>
+                                                        ) : (
+                                                          item
+                                                        )}
+                                                      </div>
+                                                    )
+                                                  )
+                                                ) : (
+                                                  <React.Fragment>
+                                                    {typeof value ===
+                                                    "string" ? (
+                                                      <React.Fragment>
+                                                        {value}
+                                                        <button className="btn btn-xs btn-circle btn-error">
+                                                          <GrFormClose className="text-xl text-base-100" />
+                                                        </button>
+                                                      </React.Fragment>
+                                                    ) : (
+                                                      value
+                                                    )}
+                                                  </React.Fragment>
+                                                )}
+                                              </div>  )
+                                          )} </div> </div>  </div> ))}
+                                </Card>)}   <center><button
+                                  className="btn border mt-3"
+                                  onClick={() => {
+                                    if (!categoryId) {
+                                      swalError(
+                                        "Select category",
+                                        "Select Category First"
+                                      ); return; }
+                                    if (selectedAttributes.length < 1) {
+                                      setShowData(true);
+                                      return;
+                                    } else {
+                                      // generateValueCombinations();
+                                      dispatch(
+                                        setProduct({
+                                          attributes: selectedAttributes,
+                                        }) );
+                                      setAttSelected(true);
+                                      handleSubmitUpdate();
+                                      success(
+                                        "Varients Updated",
+                                        "Varient Updated Successfully!"
+                                      );  } }}> Update Varients
+                                </button>
+                              </center>
+                            </div>
+                          </div>
+
+                          <div className="mt-3" id="varientsDiv">
+                            <Card className="relative">
+                              <div className="flex flex-col mt-4">
+                                <div className="">
+                                  <div className="text-center flex justify-content-center items-center flex">
+                                    <h5 className="d-inline mx-1">
+                                      Variant List
+                                    </h5>
+                                    <div className="d-inline">
+                                      <AiFillInfoCircle />
+                                    </div>
+                                  </div>
+                                  <p>
+                                    {combinations.map((x, index) => {
+                                      const matchingVariantIndex =
+                                        variantData.findIndex((variant) =>
+                                          isEqualVariants(variant, x)
+                                        );
+                                      return (
+                                        <>
+                                          <div className="row  mx-5 my-3">
+                                            {Object.entries(x).map(
+                                              ([key, value]) => (
+                                                <>
+                                                  <div className="col col-lg-3 col-md-3 col-6 bg-light">
+                                                    <span className="font-semibold ">
+                                                      {key}:
+                                                    </span>
+                                                    <span className="text-primary mx-1">
+                                                      {value}
+                                                    </span>
+                                                  </div> </> )  )} </div>    </>); })}  </p> </div> </div> <div className="d-flex justify-content-center align-items-center my-2">
+                                <button className="btn btn-secondary" onClick={() => setShowData(true)}
+                                > Next </button>  </div> </Card> </div> </div>  </div>  </div> </motion.div> </div></div>  </div> </div> </div> </div> </>);}export default EditProduct;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                ------------------------------------------------------
+
+                                import React, { useState, useEffect } from "react";
+import Header from "../../../components/ui/Header";
+import AttributeBannerImage from "../../../assets/images/attributesImage.png";
+import { useNavigate, Link, useParams, useLocation } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import "react-quill/dist/quill.snow.css";
+import Draggable from "react-draggable";
+import { GrFormClose } from "react-icons/gr";
+import ReactQuill from "react-quill";
+import { nanoid } from "nanoid";
+import { motion } from "framer-motion";
+import Dropzone from "../../../components/ui/Dropzone";
+import {
+  fadeInFromLeftVariant,
+  fadeInFromRightVariant,
+} from "../../../animations/index";
+import img from "../../../assets/images/productManagementImage.png";
+import { setProduct } from "../../../features/appConfig/addProductSlice";
+import { PATHS } from "../../../Routes/paths";
+import API_WRAPPER from "../../../api";
+
+function AddVarients() {
+ const [activeTab, setActiveTab] = useState({ _id: "", tab: "tab1" });
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [description, setDescription] = useState("");
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [vendorsList, setVendorsList] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [formData, setFormData] = useState({});
+  const [tagValue, setTagValue] = useState("");
+  const [tagsArray, setTagsArray] = useState([]);
+  const [preview, setPreview] = useState();
+  const [foregroundWidth, setForegroundWidth] = useState(100);
+  const [foregroundHeight, setForegroundHeight] = useState(100);
+  const [selectedShape, setSelectedShape] = useState("square");
+  const [foregroundX, setForegroundX] = useState(0);
+  const [foregroundY, setForegroundY] = useState(0);
+  const [showModal, setShowModal] = useState(false);
+  const [varientsData,setVarientsData] = useState([]);
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const pid = searchParams.get("pid");
+
+  console.log("pid is index", pid);
+  useEffect(() => {
+    console.log("usefeect invoked");
+    getAllVarientsData();
+  }, [pid]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({ ...prevData, [name]: value }));
+  };
+
+  const handleTagInputChange = (event) => {
+    setTagValue(event.target.value);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" && tagValue.trim() !== "") {
+      setTagsArray([...tagsArray, tagValue.trim()]);
+      setTagValue("");
+    }
+  };
+
+
+  const renderContent = (variantList) => {
+    const { _id, tab } = activeTab;
+    switch (`${_id}-${tab}`) {
+      case `${variantList._id}-tab1`:
+        return (
+          <>
+            <div className="w-full mt-5">
+              <div className="row">
+                <div className="col col-lg-7 col-md-12 col-12 me-5 ms-lg-3 bg-light p-4 rounded border my-1">
+                  <hr className="mt-4" />
+                  <div className="form-group mt-4">
+                    <label htmlFor="productName" className="form-label">
+                      Varient Title<span className="text-danger">*</span>
+                    </label>
+                    <input
+                      onChange={(e) => handleInputChange(e)}
+                      className="form-control"
+                      type="text"
+                      name="name"
+                      id="productName"
+                    />
+                  </div>
+                </div>
+                <div className="col col-lg-4 col-md-12 col-12  bg-light rounded border p-4 my-1">
+                  <hr className="mt-4" />
+                  <div className="form-group mt-4">
+                    <label htmlFor="status" className="form-label">
+                      Status<span className="text-danger">*</span>
+                    </label>
+                    <select
+                      onChange={(e) => handleInputChange(e)}
+                      className="form-select"
+                      name="status"
+                      id="status"
+                    >
+                      <option disabled selected>
+                        select status
+                      </option>
+                      <option value="ACTIVE">Active</option>
+                      <option value="INACTIVE">Inactive</option>
+                    </select>
+                  </div>
+                  <div className="form-group mt-4">
+                    <label htmlFor="readyToShip" className="form-label">
+                      Ready To Ship:<span className="text-danger">*</span>
+                    </label>
+                    <select
+                      onChange={(e) => handleInputChange(e)}
+                      className="form-select"
+                      name="readyToShip"
+                      id="readyToShip"
+                    >
+                      <option disabled selected>
+                        Default
+                      </option>
+                      <option value="true">yes</option>
+                      <option value="false">no</option>
+                    </select>
+                  </div>
+                  <div className="form-group mt-4">
+                    <label htmlFor="freeShipping" className="form-label">
+                      Free Shipping:<span className="text-danger">*</span>
+                    </label>
+                    <select
+                      onChange={(e) => handleInputChange(e)}
+                      className="form-select"
+                      name="freeShipping"
+                      id="freeShipping"
+                    >
+                      <option disabled selected>
+                        Default
+                      </option>
+                      <option value="true">yes</option>
+                      <option value="false">no</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="row  mt-4">
+              <div className="col col-lg-7 col-md-12 col-12 me-5 ms-lg-3 bg-light  p-4 rounded border my-1">
+                <div className="p-4 rounded">
+                  <hr className="mt-4" />
+                  <div className="form-group mt-4">
+                    <label className="label">
+                      <span className="label-text">
+                        Description<span className="text-danger">*</span>
+                      </span>
+                    </label>
+                    <ReactQuill
+                      className="mb-5 reactquill"
+                      theme="snow"
+                      value={description}
+                      onChange={setDescription}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="col col-lg-4 col-md-12 col-12  bg-light rounded border p-4 my-1">
+                <div className="p-4 bg-light">
+                  <h3 className="font-semibold">Product Organisation</h3>
+                  <hr className="mt-4" />
+
+                  <div className="form-group mt-4">
+                    <label className="label">
+                      <span className="label-text">
+                        Tags<span className="text-danger">*</span>
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      value={tagValue}
+                      onChange={handleTagInputChange}
+                      onKeyDown={handleKeyDown} // Use onKeyDown instead of onKeyPress
+                      placeholder="Enter a tag and press Enter"
+                      className="form-control"
+                    />
+
+                    <div className="mt-4 d-flex gap-4 flex-wrap">
+                      {tagsArray.map((tag, index) => (
+                        <div
+                          key={index}
+                          className="d-flex justify-content-between align-items-center bg-light rounded-lg px-2 py- w-autos"
+                        >
+                          <span>{tag}</span>
+                          <button
+                            className="btn btn-outline-danger btn-sm ml-4 my-1"
+                            onClick={() => removeTag(tag)}
+                          >
+                            <GrFormClose />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="form-group mt-4">
+                    <label className="label">
+                      <span className="label-text">
+                        Stock Keeping Unit (SKU)
+                        <span className="text-danger">*</span>
+                      </span>
+                    </label>
+                    <input
+                      onChange={(e) => handleInputChange(e)}
+                      className="form-control"
+                      placeholder="Enter SKU"
+                      type="text"
+                      name="sku"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="row mt-4">
+              <div className="col col-lg-7 col-md-12 col-12 me-5 ms-lg-3 bg-light  p-4 rounded border my-1">
+                <motion.div
+                  variants={fadeInFromLeftVariant}
+                  animate="animate"
+                  initial="initial"
+                  className="bg-light"
+                >
+                  <h3 className="font-semibold">
+                    Add Cover Image<span className="text-danger">*</span>
+                  </h3>
+                  <hr className="mt-4" />
+
+                  <div className="border border-primary rounded flex items-center justify-center mt-4">
+                    <Dropzone
+                      accept={".png"}
+                      onFilesChange={(data) => {
+                        console.log(data);
+                        setFormData({ ...formData, img: data[0] });
+                      }}
+                    />
+                  </div>
+                </motion.div>
+              </div>
+              <div className="col col-lg-4 col-md-12 col-12  bg-white rounded  p-4 my-1">
+                <motion.div
+                  variants={fadeInFromRightVariant}
+                  animate="animate"
+                  initial="initial"
+                  className="flex flex-md-column  p-4 bg-light rounded border"
+                >
+                  {/* {preview ? (
+                  <button
+                    onClick={() =>
+                      document.getElementById("coverImage_Modal").showModal()
+                    }
+                    className="btn btn-primary"
+                  >
+                    Show Preview
+                  </button>
+                ) : (
+                  <p>select image</p>
+                )} */}
+                  <div className="row">
+                    <div className="col col-lg-6 col-md-6 col-12 my-1">
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => setShowModal(true)}
+                      >
+                        Show Preview
+                      </button>
+                    </div>
+                    <div className="col col-lg-3 col-md-3 col-12 my-1">
+                      <button
+                        onClick={handleSubmit}
+                        className="btn btn-primary"
+                      >
+                        Next
+                      </button>
+                    </div>
+                    <div className="col col-lg-3 col-md-3 col-12 my-1">
+                      <Link to="/admin/dashboard" className="btn btn-secondary">
+                        Cancel
+                      </Link>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+
+            {/* Bootstrap modal */}
+            <div
+              className={`modal fade ${showModal ? "show" : ""}`}
+              tabIndex="-1"
+              style={{ display: showModal ? "block" : "none" }}
+            >
+              <div className="modal-dialog">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h5 className="modal-title">Select Position</h5>
+                    <button
+                      type="button"
+                      className="btn-close"
+                      onClick={() => setShowModal(false)}
+                      aria-label="Close"
+                    ></button>
+                  </div>
+                  <div className="modal-body">
+                    <div>
+                      <div style={{ position: "relative" }}>
+                        <img
+                          id="parentElement"
+                          // src={preview}
+                          src={img}
+                          alt="Cover Image"
+                          height="300"
+                          style={{ width: "100%" }}
+                        />
+                        <Draggable bounds="parent" onDrag={handleDrag}>
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              width: `${foregroundWidth}px`,
+                              height: `${foregroundHeight}px`,
+                              border: "2px solid red",
+                              borderRadius:
+                                selectedShape === "circle" ? "50%" : "0",
+                            }}
+                          ></div>
+                        </Draggable>
+                      </div>
+
+                      <div className="row mt-4">
+                        <div className="col col-lg-6 col-md-12 col-12 my-2">
+                          <label htmlFor="foregroundWidth">
+                            Foreground Width:
+                          </label>
+                        </div>
+                        <div className="col col-lg-6 col-md-12 col-12">
+                          <input
+                            className="input border-primary"
+                            type="number"
+                            id="foregroundWidth"
+                            value={foregroundWidth}
+                            onChange={handleForegroundWidthChange}
+                          />
+                        </div>
+                        <div className="col col-lg-6 col-md-12 col-12">
+                          <label htmlFor="foregroundHeight">
+                            Foreground Height:
+                          </label>
+                        </div>
+                        <div className="col col-lg-6 col-md-12 col-12">
+                          <input
+                            className="input border-primary"
+                            type="number"
+                            id="foregroundHeight"
+                            value={foregroundHeight}
+                            max="150"
+                            onChange={(e) =>
+                              setForegroundHeight(parseInt(e.target.value))
+                            }
+                          />
+                        </div>
+                        <div className="col col-lg-6 col-md-12 col-12 my-2">
+                          <label htmlFor="shapeSelect">Select Shape:</label>
+                        </div>
+                        <div className="col col-lg-6 col-md-12 col-12 my-2">
+                          <select
+                            className="select border-primary border-2"
+                            id="shapeSelect"
+                            value={selectedShape}
+                            onChange={(e) => setSelectedShape(e.target.value)}
+                          >
+                            <option value="square">Square</option>
+                            <option value="circle">Circle</option>
+                          </select>
+                        </div>
+                        <div className="col col-lg-6 col-md-12 col-12 my-1">
+                          <label htmlFor="xPosition">X Position :</label>
+                        </div>
+                        <div className="col col-lg-6 col-md-12 col-12">
+                          <span id="xPosition">{foregroundX}%</span>
+                        </div>
+                        <div className="col col-lg-6 col-md-12 col-12">
+                          <label htmlFor="yPosition">Y Position:</label>
+                        </div>
+                        <div className="col col-lg-6 col-md-12 col-12">
+                          <span id="yPosition">{foregroundY}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* End of Bootstrap modal */}
+          </>
+        );
+      default:
+        return <div>No data?</div>;
+    }
+  };
+
+  return (
+    <div className="container my-3">
+      <div className="row">
+        <div className="col">
+          <Header
+            heading="Add Varients"
+            subheading="This is admin dashboard which added Varients here provides all the details in a very concise and user-friendly way."
+            image={AttributeBannerImage}
+          />
+          <div className="container mt-3">
+            <ul
+              className="nav nav-tabs"
+              role="tablist"
+              style={{ overflowX: "auto" }}
+            >
+              {varientsData.map((variantList, index) => {
+                const variantAttributes = variantList.varients.map((variant) =>
+                  Object.entries(variant)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join(", ")
+                );
+                return (
+                  <li className="nav-item" key={index}>
+                    // Inside the map function
+                    <a
+                      className={`pointer-cursor nav-link ${
+                        activeTab._id === variantList._id &&
+                        activeTab.tab === `tab${index + 1}`
+                          ? "active"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        setActiveTab({
+                          _id: variantList._id,
+                          tab: `tab${index + 1}`,
+                        })
+                      }
+                    >
+                      {variantAttributes.join(" , ")}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+            {/* <div className="tab-content mt-3">{renderContent()}</div> */}
+            <div className="tab-content mt-3">
+              {varientsData.map((variantList, index) => (
+                <React.Fragment key={index}>
+                  {activeTab._id === variantList._id &&
+                    activeTab.tab === `tab${index + 1}` &&
+                    renderContent(variantList)}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default AddVarients;
