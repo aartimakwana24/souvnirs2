@@ -11,6 +11,7 @@ import AppLayOut from "./Layout/AppLayOut.js";
 import AdminDashboard from "./pages/admin/Dashboard/AdminDashboard.js";
 import MyChart from "./MyChart.js";
 import ShopLayout from "./Layout/ShopLayout.js";
+import { QueryClientProvider, QueryClient } from "react-query";
 
 import {
   adminRoutes,
@@ -20,9 +21,11 @@ import {
 } from "./Routes/routes.js";
 
 function App() {
+  const queryClient = new QueryClient();
   const role = useSelector((state) => state.appConfig.login);
   return (
     <>
+     <QueryClientProvider client={queryClient}>
       <Routes>
         {/* <Route path={PATHS.root} element={<MyChart />} /> */}
         <Route
@@ -110,6 +113,7 @@ function App() {
         })}
         <Route path={PATHS.permissionDenied} element={<PermissionDenied />} />
       </Routes>
+     </QueryClientProvider>
     </>
   );
 }

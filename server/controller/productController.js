@@ -47,8 +47,8 @@ export const getProducts = async (req, res) => {
         $unwind: "$product",
       },
     ]);
-    // const pid = varientsList[0].pid.toString();
 
+    console.log("Varients list is ",varientsList);
     res.status(200).json(varientsList);
   } catch (error) {
     console.error(error);

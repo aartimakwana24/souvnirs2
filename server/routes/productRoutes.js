@@ -12,7 +12,7 @@ import {
 } from "../controller/productController.js";
 const productRouter = express.Router();
 productRouter.post("/products/add-product",authMiddleware(["vendor", "admin", "customer"]),createProduct);
-productRouter.get( "/products/get-all-products",authMiddleware(["vendor", "admin", "customer"]), getProducts);
+productRouter.get( "/products/get-all-products", getProducts);
 productRouter.get(
   "/products/get-all-products2",
   authMiddleware(["vendor", "admin", "customer"]),
