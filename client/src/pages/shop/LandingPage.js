@@ -42,7 +42,6 @@ function LandingPage() {
 
       if (response.status === 200) {
         const products = response.data;
-
         const uniqueProducts = [];
         const productIds = new Set();
 
@@ -53,7 +52,10 @@ function LandingPage() {
             productIds.add(productId);
           }
         });
+        console.log("Product List ", uniqueProducts);
 
+        let personalizedRes = await API_WRAPPER.get("/productsDetails/get-all-personalized");
+        console.log("personalizedRes ", personalizedRes);
         return uniqueProducts;
       } else {
         throw new Error("Failed to fetch products");
@@ -77,6 +79,7 @@ function LandingPage() {
   if (error) {
     return <div>Error: {error.message}</div>;
   }
+
   return (
     <div style={{ overflow: "hidden" }}>
       <HeaderCards
@@ -114,7 +117,7 @@ function LandingPage() {
         subHeadingFour="Capped at $50 per order"
       />
 
-      <div class="row d-flex flex-column flex-md-row justify-content-md-between mt-5 bg-white">
+      <div className="row d-flex flex-column flex-md-row justify-content-md-between mt-5 bg-white">
         <div className="col col-md-12 col-12 col-lg-3">
           <ProductCarosel
             className="flex-1"
@@ -129,7 +132,7 @@ function LandingPage() {
               {
                 content: (
                   <div className="row row-cols-1 row-cols-md-2 g-4">
-                    {productsList?.slice(0, 8).map((product) => (
+                    {productsList?.slice(0, 6).map((product) => (
                       <div
                         key={product._id}
                         className="col bg-white p-4 rounded shadow-sm cursor-pointer"
@@ -161,7 +164,7 @@ function LandingPage() {
               {
                 content: (
                   <div className="row row-cols-1 row-cols-md-2 g-4">
-                    {productsList?.slice(8, 16)?.map((product) => (
+                    {productsList?.slice(6, 12)?.map((product) => (
                       <div
                         key={product._id}
                         className="col bg-white p-4 rounded shadow-sm cursor-pointer"
@@ -192,7 +195,7 @@ function LandingPage() {
               {
                 content: (
                   <div className="row row-cols-1 row-cols-md-2 g-4">
-                    {productsList?.slice(16, 24)?.map((product) => (
+                    {productsList?.slice(12, 18)?.map((product) => (
                       <div
                         key={product._id}
                         className="col bg-white p-4 rounded shadow-sm cursor-pointer"

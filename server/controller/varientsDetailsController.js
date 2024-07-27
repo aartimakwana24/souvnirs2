@@ -198,3 +198,42 @@ export const updateVarientController = async (req, res) => {
     res.status(500).json({ error: "Failed to update variant" });
   }
 };
+
+export const getAllPersonalizedData = async (req, res) => {
+  try {
+    const personalizedData = await VariantsPersonalized.aggregate([
+      {
+        $lookup: {
+          from: "ProductVarients2",
+          localField: "pvid",
+          foreignField: "_id",
+          as: "productVarients2",
+        },
+      },
+      { $unwind: "$productVarients2" },
+      {
+        $lookup: {
+          from: "VarientsDetails",
+          localField: "pvid",
+          foreignField: "pvid",
+          as: "varientsDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "Product",
+          localField: "productVarients2.pid",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+      { $unwind: "$product" },
+    ]);
+
+    console.log("personalizedData ", personalizedData);
+    return res.status(200).json(personalizedData);
+  } catch (error) {
+    console.log("Error in getAllPersonalizedData ", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};

@@ -4,6 +4,7 @@ import {
   varientsDetailsController,
   checkVarientController,
   updateVarientController,
+  getAllPersonalizedData,
 } from "../controller/varientsDetailsController.js";
 import { upload } from "../middlewares/ImageUpload.js";
 const varientsDetailsRoutes = express.Router();
@@ -26,5 +27,8 @@ varientsDetailsRoutes.put(
   upload,
   updateVarientController
 );
+varientsDetailsRoutes.get(
+  "/productsDetails/get-all-personalized",
+  getAllPersonalizedData
+);
 export default varientsDetailsRoutes;
-// /productsDetails/getAll-varients/

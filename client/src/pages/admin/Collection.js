@@ -99,19 +99,6 @@ function Collection() {
               </Link>
             </div>
             <div className="mt-2 border d-flex flex-column">
-              {/* <ReusableTable
-                columns={columns}
-                // data={data}
-                showButtons
-                // onEdit={handleEdit}
-                onDelete={handleDelete}
-                enableEdit
-                enableDelete
-                pageSize={10}
-                enablePagination
-                tableType="Collection"
-                buttonType="false"
-              /> */}
             </div>
 
             <div className="mt-2 border d-flex flex-column">

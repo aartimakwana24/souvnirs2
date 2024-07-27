@@ -62,7 +62,7 @@ const HeaderCards = ({
           className="col-12 col-md-4 position-relative mt-3 mt-lg-0"
         >
           <div
-            class="card mb-3"
+            className="card mb-3"
             style={{
               maxWidth: "540px",
               backgroundImage: `url(${secondaryImageOne})`,
@@ -72,14 +72,14 @@ const HeaderCards = ({
               color: "white",
             }}
           >
-            <div class="row g-0">
-              <div class="col-md-8">
-                <div class="card-body">
-                  <h5 class="card-title">
+            <div className="row g-0">
+              <div className="col-md-8">
+                <div className="card-body">
+                  <h5 className="card-title">
                     {mainHeading} {mainHeadingTwo}
                   </h5>
-                  <p class="card-text">{mainSubHeading}</p>
-                  <p class="card-text">
+                  <p className="card-text">{mainSubHeading}</p>
+                  <p className="card-text">
                     <button className="btn btn-light d-flex align-items-center">
                       <span className="fw-semibold text-black">Shop Now</span>
                       <BsArrowRight className="ms-2 fs-4 text-black" />
@@ -88,10 +88,10 @@ const HeaderCards = ({
                 </div>
               </div>
 
-              <div class="col-md-4">
+              <div className="col-md-4">
                 <img
                   src={productImageTwo}
-                  class="img-fluid rounded-start mt-lg-5"
+                  className="img-fluid rounded-start mt-lg-5"
                   alt="..."
                 />
               </div>
@@ -99,7 +99,7 @@ const HeaderCards = ({
           </div>
 
           <div
-            class="card mb-3"
+            className="card mb-3"
             style={{
               maxWidth: "540px",
               backgroundImage: `url(${secondaryImageOne})`,
@@ -109,14 +109,14 @@ const HeaderCards = ({
               color: "white",
             }}
           >
-            <div class="row g-0">
-              <div class="col-md-8">
-                <div class="card-body">
-                  <h5 class="card-title">
+            <div className="row g-0">
+              <div className="col-md-8">
+                <div className="card-body">
+                  <h5 className="card-title">
                     {tertioryHeadingOne} {tertioryHeadingTwo}
                   </h5>
-                  <p class="card-text">{tertiorySubHeading}</p>
-                  <p class="card-text">
+                  <p className="card-text">{tertiorySubHeading}</p>
+                  <p className="card-text">
                     <button className="btn btn-light d-flex align-items-center">
                       <span className="fw-semibold text-black">Shop Now</span>
                       <BsArrowRight className="ms-2 fs-4 text-black" />
@@ -124,10 +124,10 @@ const HeaderCards = ({
                   </p>
                 </div>
               </div>
-              <div class="col-md-4">
+              <div className="col-md-4">
                 <img
                   src={productImageTwo}
-                  class="img-fluid rounded-start mt-lg-5"
+                  className="img-fluid rounded-start mt-lg-5"
                   alt="..."
                 />
               </div>

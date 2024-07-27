@@ -4,7 +4,6 @@ import {
   createVarient,
   updateVarient,
   getAllVarientById,
-  // updateVarient2,
   insertVarient,
   deleteVarient,
   getAllVarients,
