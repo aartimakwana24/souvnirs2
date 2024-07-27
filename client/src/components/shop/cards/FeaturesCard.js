@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 import ScrollAnimationWrapper from "../../ui/ScrollAnimationWrapper";
 
-// The component is to show all the features of the shop in a concise manner
 const FeaturesCard = ({
   iconOne,
   iconTwo,

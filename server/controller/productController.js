@@ -48,7 +48,6 @@ export const getProducts = async (req, res) => {
       },
     ]);
 
-    console.log("Varients list is ",varientsList);
     res.status(200).json(varientsList);
   } catch (error) {
     console.error(error);

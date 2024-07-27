@@ -2,6 +2,7 @@ import PropTypes from "prop-types";
 import Sidebar from "../components/ui/Sidebar";
 import Navbar from "../components/ui/Navbar";
 import { PATH } from "../Routes/paths.js";
+import Footer from "../components/ui/Footer/index.js";
 // import { Breadcrumb, Footer } from "../components";
 
 function AppLayOut({ children }) {
@@ -16,6 +17,7 @@ function AppLayOut({ children }) {
         </div>
       </div>
       {children}
+      <Footer/>
     </>
   );
 }

@@ -1,3 +1,18 @@
 .myProductImgOne{
     height: 15rem;
 }
+
+.filter-btn1 {
+  position: relative;
+}
+
+.filter-btn1.active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: -10px; /* Adjust this value for the space below the word */
+  width: 100%; /* Adjust this value for the length of the underline */
+  height: 1px; /* Adjust this value for the thickness of the underline */
+  background-color: rgb(87, 87, 243);
+}

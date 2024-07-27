@@ -14,7 +14,7 @@ import { carouselMappingDailyDeals } from "../../mappings";
 import Tabs from "../../components/ui/Tabs/index.js";
 import { useQuery } from "react-query";
 import { useNavigate } from "react-router-dom";
-import API_WRAPPER from '../../api/index.js';
+import API_WRAPPER from "../../api/index.js";
 import Ratings from "../../components/shop/components/Ratings.js";
 import tshirt from "../../assets/images/tshirts.jpg";
 import GradiantCardList from "../../components/shop/components/GradiantCardList.js";
@@ -22,37 +22,47 @@ import { gradiantCardListCardData } from "../../mappings";
 import FullWidthBannerCard from "../../components/shop/cards/FullWidthBannerCard.js";
 import BudsImage from "../../assets/images/buds.png";
 import WatchImage from "../../assets/images/watch.png";
+import ProductsListWithFilters from "../../components/shop/components/ProductsListWithFilters.js";
+import { productListFiltersAndProducts } from "../../mappings";
+import HalfWidthBannerCard from "../../components/shop/cards/HalfWidthBannerCard.js";
+import HalfWidthBannerImgOne from "../../assets/images/halfWidthcardImgOne.png";
+import HalfWidthBannerImgTwo from "../../assets/images/halfWidthCardImgTwo.png";
+import GiftOnePngImage from "../../assets/images/giftOne.png";
+import { BrandsCardImageList } from "../../mappings";
+import BrandsCard from "../../components/shop/cards/BrandsCard.js";
+import SingleTab from "./SingleTab.js";
+import BlogList from "../../components/shop/components/BlogList.js";
+import { blogCardData } from "../../mappings";
 
 function LandingPage() {
   const navigate = useNavigate();
- const getAllProducts = async () => {
-   try {
-     const response = await API_WRAPPER.get("products/get-all-products");
-     console.log("response ", response.data);
+  const getAllProducts = async () => {
+    try {
+      const response = await API_WRAPPER.get("products/get-all-products");
 
-     if (response.status === 200) {
-       const products = response.data;
+      if (response.status === 200) {
+        const products = response.data;
 
-       const uniqueProducts = [];
-       const productIds = new Set();
+        const uniqueProducts = [];
+        const productIds = new Set();
 
-       products.forEach((item) => {
-         const productId = item.product._id.toString();
-         if (!productIds.has(productId)) {
-           uniqueProducts.push(item);
-           productIds.add(productId);
-         }
-       });
+        products.forEach((item) => {
+          const productId = item.product._id.toString();
+          if (!productIds.has(productId)) {
+            uniqueProducts.push(item);
+            productIds.add(productId);
+          }
+        });
 
-       return uniqueProducts;
-     } else {
-       throw new Error("Failed to fetch products");
-     }
-   } catch (error) {
-     console.log("Error while fetching products in landing page ", error);
-     throw error;
-   }
- };
+        return uniqueProducts;
+      } else {
+        throw new Error("Failed to fetch products");
+      }
+    } catch (error) {
+      console.log("Error while fetching products in landing page ", error);
+      throw error;
+    }
+  };
 
   const {
     data: productsList,
@@ -68,7 +78,7 @@ function LandingPage() {
     return <div>Error: {error.message}</div>;
   }
   return (
-    <>
+    <div style={{ overflow: "hidden" }}>
       <HeaderCards
         mainImage={MainBannerImg}
         secondaryImageOne={SmallCardBackgroundOne}
@@ -224,7 +234,48 @@ function LandingPage() {
         imageOne={BudsImage}
         imageTwo={WatchImage}
       />
-    </>
+
+      <ProductsListWithFilters
+        heading="Best Products at price"
+        filters={productListFiltersAndProducts.filters}
+        products={productListFiltersAndProducts.products}
+      />
+
+      <HalfWidthBannerCard
+        backgroundImageOne={HalfWidthBannerImgOne}
+        backgroundImageTwo={HalfWidthBannerImgTwo}
+        headingOne="Get 50% Off"
+        headingTwo="Get 50% Off"
+        cardTitleOne="Smart TV with Pen"
+        cardTitleTwo="Smart Phone with Pen"
+        productImageOne={GiftOnePngImage}
+        productImageTwo={GiftOnePngImage}
+        buttonHandlerOne={() =>
+          console.log("CLICKED ON HALF WIDTH BANNER CARD")
+        }
+        buttonHandlerTwo={() =>
+          console.log("CLICKED ON HALF WIDTH BANNER CARD")
+        }
+      />
+
+      <BrandsCard imagesList={BrandsCardImageList} />
+
+      <div className="mt-5">
+        <div className="row">
+          <div className="col col-lg-4 col-md-12 col-12">
+            <SingleTab heading="Budget Buy" />
+          </div>
+          <div className="col col-lg-4 col-md-12 col-12">
+            <SingleTab heading="Recently Added" />
+          </div>
+          <div className="col col-lg-4 col-md-12 col-12">
+            <SingleTab heading="Trending Products" />
+          </div>
+        </div>
+      </div>
+
+      <BlogList blogItemsData={blogCardData} />
+    </div>
   );
 }
 

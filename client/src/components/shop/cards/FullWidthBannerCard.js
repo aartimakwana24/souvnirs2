@@ -42,11 +42,4 @@ const FullWidthBannerCard = ({
   );
 };
 
-FullWidthBannerCard.propTypes = {
-  imageOne: PropTypes.string.isRequired,
-  imageTwo: PropTypes.string.isRequired,
-  mainHeading: PropTypes.string.isRequired,
-  subHeading: PropTypes.string.isRequired,
-};
-
 export default FullWidthBannerCard;

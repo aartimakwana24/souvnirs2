@@ -35,19 +35,5 @@ const GradiantCardList = ({ cardData }) => {
   );
 };
 
-GradiantCardList.propTypes = {
-  cardData: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      title: PropTypes.string.isRequired,
-      heading: PropTypes.string.isRequired,
-      subheading: PropTypes.string.isRequired,
-      background: PropTypes.string.isRequired,
-      image: PropTypes.string.isRequired,
-      link: PropTypes.string.isRequired,
-      btnColorCode: PropTypes.string.isRequired,
-    })
-  ).isRequired,
-};
 
 export default GradiantCardList;
