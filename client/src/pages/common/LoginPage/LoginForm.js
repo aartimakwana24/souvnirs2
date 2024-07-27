@@ -8,7 +8,8 @@ import Swal from "sweetalert2";
 import "./loginForm.css";
 import { useDispatch } from "react-redux";
 import { getLoginInfo } from "../../../features/appConfig/appSlice";
-// import { debouncedShowToast } from "../../../utils";
+import { BiArrowBack } from "react-icons/bi";
+
 
 const LoginForm = () => {
   const navigate = useNavigate();
@@ -88,6 +89,10 @@ const LoginForm = () => {
       <div className="w-100 me-5">
         <div className="d-flex justify-content-center align-items-center">
           <div className=" p-4 rounded-xl  bg-light me-1 leftLoginDiv">
+            <div className="btn btn-outline-secondary">
+              <BiArrowBack />
+              <Link to={PATHS.landingPage} className="btn" style={{padding:"0px"}}>Shop</Link>
+            </div>
             <div className="text-center">
               <img
                 src={SouvnirsLogoImg}
