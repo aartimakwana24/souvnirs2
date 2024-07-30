@@ -7,6 +7,7 @@ import VarientsDetails from "../schema/productVarientsDetails.js";
 import { getOperator } from "../utils/index.js";
 import Collection from "../schema/collectionModal.js";
 import mongoose, { Mongoose } from "mongoose";
+import collection from "../routes/collectionRoutes.js";
 
 const addConditionToQuery = (query, condition, radioSelection) => {
   if (radioSelection === "all") {
@@ -73,6 +74,11 @@ export const getRawDataForFilter = async (req, res) => {
   try {
     console.log("req.body is ", req.body);
     const conditionsArray = req.body.changedTitleFilterArr;
+    console.log(
+      "req.body.changedTitleFilterArr.selectedTitle ",
+      req.body.changedTitleFilterArr[0].selectedTitle
+    );
+
     const radioSelection = req.body.radioSelection;
     let filteredProducts = [];
     let query;
@@ -104,7 +110,7 @@ export const getRawDataForFilter = async (req, res) => {
       if (actualConditionValue) {
         condition.conditionValue = actualConditionValue[0].conditionValue;
         const operator = getOperator(condition.conditionValue);
-
+        console.log("operator is ", operator);
         switch (selectedTitle) {
           case "category":
             const categories = await categoriesModal.find({
@@ -119,7 +125,8 @@ export const getRawDataForFilter = async (req, res) => {
               addConditionToQuery(query, categoryCondition, radioSelection);
             }
             break;
-          case "vendorId":
+          case "Vendor":
+            console.log("operator in vendors ", operator);
             const vendors = await vendorModal.find({
               $or: [
                 { firstName: { $regex: inputValue, $options: "i" } },
@@ -168,6 +175,7 @@ export const getRawDataForFilter = async (req, res) => {
             addConditionToQuery(query, tagsQuery, radioSelection);
             break;
           default:
+            console.log("Defalut matched");
             const varientsQuery = await getVarientsDetailsQuery(
               condition,
               selectedTitle,
@@ -200,6 +208,7 @@ export const getRawDataForFilter = async (req, res) => {
       ).values()
     );
 
+    console.log("uniqueFilteredProducts ", uniqueFilteredProducts);
     res.json(uniqueFilteredProducts);
   } catch (error) {
     console.error("Error occurred while filtering products", error);
@@ -211,7 +220,6 @@ export const createCollection = async (req, res) => {
   try {
     const collection = new Collection(req.body);
     await collection.save();
-    console.log("collection at the timeof insert ", collection);
     res.status(201).json(collection);
   } catch (error) {
     console.log("error in createCollection controller ", error);
@@ -243,88 +251,29 @@ export const getCollectionById = async (req, res) => {
   }
 };
 
-// export const updateCollection = async (req, res) => {
-//   const {
-//     inputValue,
-//     title,
-//     description,
-//     diactiveProductId,
-//     status,
-//     radioSelection,
-//     collectionConditionId,
-//   } = req.body;
-//   let conditionValue = req.body.conditionValue;
-//   console.log("req.bodu ", req.body);
-//   try {
-//     let collectionToUpdate;
-//     if (!mongoose.Types.ObjectId.isValid(conditionValue)) {
-//       console.log("Inside if");
-//       collectionToUpdate = await conditionValueModal.findOne({
-//         conditionValue: conditionValue,
-//       });
-//       conditionValue = collectionToUpdate._id;
-//     }
-//     console.log("collectionToUpdate ", collectionToUpdate);
-
-//     if (!collectionToUpdate) {
-//       return res.status(404).json({ error: "Collection not found" });
-//     }
-//     let idToFind = req.body._id;
-//     console.log("conditionValue ", conditionValue);
-//     const updatedCollection = await Collection.findByIdAndUpdate(
-//       idToFind,
-//       {
-//         collectionConditionId,
-//         conditionValue: conditionValue,
-//         inputValue,
-//         title,
-//         description,
-//         diactiveProductId,
-//         status,
-//         updatedAt: Date.now(),
-//       },
-//       // updateData,
-//       { new: true, runValidators: true }
-//     );
-
-//     if (!updatedCollection) {
-//       return res.status(404).json({ error: "Failed to update collection" });
-//     }
-
-//     console.log("updatedCollection ", updatedCollection);
-//     res.status(200).json(updatedCollection);
-//   } catch (error) {
-//     console.log("Error in updateCollection controller", error);
-//     res
-//       .status(400)
-//       .json({ error: "Failed to update collection", message: error.message });
-//   }
-// };
-
-
 export const updateCollection = async (req, res) => {
   const {
     _id,
     inputValue,
     title,
     description,
+    slug,
     diactiveProductId,
     status,
     radioSelection,
     collectionConditionId,
     conditionValue,
+    
   } = req.body;
 
   try {
-    let idToUpdate = _id; // Assuming _id is directly available in req.body
+    let idToUpdate = _id;
 
-    // Check if conditionValue is an array of valid ObjectId strings
     let updatedConditionValues = [];
     for (let value of conditionValue) {
       if (mongoose.Types.ObjectId.isValid(value)) {
         updatedConditionValues.push(value);
       } else {
-        // Find the document in conditionValueModal based on value
         const conditionDoc = await conditionValueModal.findOne({
           conditionValue: value,
         });
@@ -335,13 +284,11 @@ export const updateCollection = async (req, res) => {
             .json({ error: `Condition document not found for value ${value}` });
         }
 
-        // Push the _id of the found document
         updatedConditionValues.push(conditionDoc._id);
       }
     }
-console.log("updatedConditionValues ", updatedConditionValues);
+    console.log("updatedConditionValues ", updatedConditionValues);
 
-    // Update the collection document
     const updatedCollection = await Collection.findByIdAndUpdate(
       idToUpdate,
       {
@@ -349,15 +296,16 @@ console.log("updatedConditionValues ", updatedConditionValues);
         conditionValue: updatedConditionValues,
         inputValue,
         title,
+        slug,
         description,
         diactiveProductId,
         status,
         updatedAt: Date.now(),
+        radioSelection,
       },
       { new: true, runValidators: true }
     );
 
-    console.log("updatedCollection ", updatedCollection);
     if (!updatedCollection) {
       return res.status(404).json({ error: "Failed to update collection" });
     }
@@ -384,5 +332,29 @@ export const deleteCollectionById = async (req, res) => {
   } catch (error) {
     console.log("Error in deleteCollectionById", error);
     res.status(400).json({ error: "Failed to delete collection" });
+  }
+};
+
+export const getCollectionBySlug = async (req, res) => {
+  try {
+    console.log("req.params ", req.params);
+    const slug = req.params.slug.trim(); 
+    const normalizedSlug = slug.replace(/\s+/g, " ");
+    const regex = new RegExp(
+      `^${normalizedSlug.split(" ").join("\\s*")}$`,
+      "i"
+    );
+
+    const collectionData = await Collection.findOne({
+      slug: { $regex: regex },
+    });
+    if (collectionData) {
+      console.log("collectionData ", collectionData);
+      res.status(200).json(collectionData);
+    } else {
+      res.status(200).json({msg:"No collection found based on that slug"});
+    }
+  } catch (error) {
+    console.log("Error in getCollectionBySlug", error);
   }
 };

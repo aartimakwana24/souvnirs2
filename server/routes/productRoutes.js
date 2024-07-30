@@ -3,12 +3,11 @@ import authMiddleware from "../middlewares/index.js";
 import {
   createProduct,
   getProducts,
-  getProductVariants,
-  // updateProduct,
   deleteProduct,
   getVarients2,
   getProductVariants2,
   updateProduct2,
+  getActiveProductsById,
 } from "../controller/productController.js";
 const productRouter = express.Router();
 productRouter.post("/products/add-product",authMiddleware(["vendor", "admin", "customer"]),createProduct);
@@ -42,5 +41,9 @@ productRouter.put(
   "/product/update2/:id",
   authMiddleware(["vendor", "admin", "customer"]),
   updateProduct2
+);
+productRouter.get(
+  "/product/get-all-active-ProductsById",
+  getActiveProductsById
 );
 export default productRouter;

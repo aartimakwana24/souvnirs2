@@ -27,6 +27,8 @@ import ChildMenus from "../pages/admin/Menus/ChildMenus.js";
 import AddChildMenus from "../pages/admin/AddChildMenus.js";
 import EditChildMenus from "../pages/admin/EditChildMenus.js";
 import LandingPage from "../pages/shop/LandingPage.js";
+import CollectionProducts from "../components/shop/components/CollectionProducts.js";
+import CategoryProducts from "../components/shop/components/CategoryProducts.js";
 
 export const adminRoutes = [
   // {
@@ -187,7 +189,7 @@ export const adminRoutes = [
   },
   {
     id: nanoid(),
-    path:`${PATHS.adminEditChildMenus}/:id`,
+    path: `${PATHS.adminEditChildMenus}/:id`,
     Component: EditChildMenus,
     defaultRole: "admin",
   },
@@ -216,5 +218,15 @@ export const shopRoutes = [
     id: nanoid(),
     path: PATHS.landingPage,
     Component: LandingPage,
+  },
+  {
+    id: nanoid(),
+    path: `${PATHS.shopCollection}/:slug`,
+    Component: CollectionProducts,
+  },
+  {
+    id: nanoid(),
+    path: `${PATHS.shopCategory}/:slug`,
+    Component: CategoryProducts,
   },
 ];

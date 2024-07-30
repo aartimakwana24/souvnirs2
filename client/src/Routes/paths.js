@@ -4,7 +4,7 @@ export const PATHS = {
   register: "/register",
   permissionDenied: "/permission-denied",
   pageNotFound: "/page-not-found",
-  landingPage: "/",
+  
   // admin routes
   adminDashboard: "/admin/dashboard",
   adminCart: "/admin/cart",
@@ -45,4 +45,21 @@ export const PATHS = {
 
   // customer routes
   customerDashboard: "/customer/dashboard",
+
+  // shop routes
+  landingPage: "/",
+  shop: "/shop",
+  shopCollection: "/collection",
+  shopCategory: "category",
+  shopProduct: "/products",
+  shopPage: "/page",
+  // TODO: newed to change it as per the params
+  productInfo: "/productInfo",
+  orderSuccess: "/order_success",
+  compareProduct: "/compare_product",
+  cartPage: "/cart_page",
+  checkout: "/checkout",
+  shopWishlist: "/shop/wishlist",
+  blogs: "/blogs",
+  shopAboutUs: "/shop/about_us",
 };

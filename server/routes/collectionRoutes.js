@@ -8,10 +8,10 @@ import {
   deleteCollectionById,
   getCollectionById,
   updateCollection,
+  getCollectionBySlug,
 } from "../controller/collectionController.js";
 collection.post(
   "/collection/filter-data",
-  authMiddleware(["vendor", "admin", "customer"]),
   getRawDataForFilter
 );
 collection.post(
@@ -38,4 +38,7 @@ collection.get(
 );
 
 collection.put("/collection/update-collection/:id", updateCollection);
+
+collection.get("/collection/:slug", getCollectionBySlug);
+collection.get("/category/:slug");
 export default collection;

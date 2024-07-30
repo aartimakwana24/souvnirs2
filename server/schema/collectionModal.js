@@ -32,11 +32,23 @@ const CollectionSchema = new mongoose.Schema(
         ref: "Product",
       },
     ],
+    radioSelection: {
+      type: String,
+    },
     status: {
       type: String,
       enum: ["ACTIVE", "INACTIVE", "PENDING"],
       default: "ACTIVE",
     },
+    slug: {
+      type: String,
+      unique: true,
+    },
+    selectedTitle : [
+      {
+        type: String,
+      },
+    ],
   },
   {
     timestamps: true,

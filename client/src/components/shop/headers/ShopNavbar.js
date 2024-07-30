@@ -153,38 +153,6 @@ const ShopNavbar = () => {
 
   return (
     <>
-      {/* <div className="bg-light join w-full rounded-none d-flex align-items-center px-4">
-        <div className="dropdown me-3">
-          <button
-            className="btn btn-primary dropdown-toggle d-flex align-items-center"
-            type="button"
-            id="categoryDropdown"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-          >
-            <TfiMenuAlt className="me-2" />
-            All Categories
-            <RiArrowDropDownLine size={24} className="ms-2" />
-          </button>
-          <ul className="dropdown-menu" aria-labelledby="categoryDropdown">
-            {categoriesData.map((category) => (
-              <li key={category._id}>
-                <button
-                  className="dropdown-item"
-                  onClick={() => navigate(`/category/${category.name}`)}
-                >
-                  {category.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <ul className="navbar-nav d-flex flex-row">
-          {renderSubMenuItems(navbarData)}
-        </ul>
-      </div> */}
-
       <nav className="navbar navbar-expand-lg navbar-light bg-light">
         <div className="container-fluid">
           <div className="dropdown me-3">

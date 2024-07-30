@@ -230,7 +230,7 @@ export const getAllPersonalizedData = async (req, res) => {
       { $unwind: "$product" },
     ]);
 
-    console.log("personalizedData ", personalizedData);
+    // console.log("personalizedData ", personalizedData);
     return res.status(200).json(personalizedData);
   } catch (error) {
     console.log("Error in getAllPersonalizedData ", error);
