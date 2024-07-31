@@ -4,7 +4,7 @@ import productVarients2 from "../schema/productVarients2.js";
 import vendorModal from "../schema/vendorModal.js";
 import mongoose from "mongoose";
 import categoriesModal from "../schema/categoriesModal.js";
-import attributeType from "../schema/productAttributeType.js";
+import productAttributeType from "../schema/productAttributeType.js";
 import attributeModal from "../schema/attributeModal.js";
 import varientsDetails from "../schema/productVarientsDetails.js";
 import personalized from "../schema/productVariantsPersonalized.js";
@@ -59,6 +59,7 @@ export const getProducts = async (req, res) => {
 export const getProductVariants = async (req, res) => {
   try {
     const { productId } = req.params;
+    console.log("productId ", productId);
     const products = await productVarients.aggregate([
       {
         $match: {
@@ -75,6 +76,7 @@ export const getProductVariants = async (req, res) => {
       },
     ]);
 
+    console.log("getProductVariants products", products);
     const vendorId = products[0].result[0].vendorId.toString();
     const vendor = await vendorModal.findOne({ _id: vendorId });
     const vName = vendor ? vendor.firstName : "";
@@ -137,6 +139,7 @@ export const getProductVariants = async (req, res) => {
 export const deleteProduct = async (req, res) => {
   try {
     const _id = req.params.id;
+    console.log("_id ", _id);
     const productVariant = await productVarients2.findOne({ _id });
     if (!productVariant) {
       console.log("Product variant not found");
@@ -145,7 +148,8 @@ export const deleteProduct = async (req, res) => {
 
     const pid = productVariant.pid;
 
-    const deletedProduct = await product.findByIdAndDelete(pid);
+    console.log("pid ", pid);
+    const deletedProduct = await productModal.findByIdAndDelete(pid);
     const deletedProductVarients2 = await productVarients2.findByIdAndDelete(
       pid
     );
@@ -317,6 +321,85 @@ export const updateProduct2 = async (req, res) => {
   }
 };
 
+// export const getActiveProductsById = async (req, res) => {
+//   try {
+//     const productIds = req.query.ids;
+//     const products = await productModal.find({ _id: { $in: productIds } });
+//     const productObjectIds = products.map((product) => product._id);
+
+//     const variants = await productVarients2.find({
+//       pid: { $in: productObjectIds },
+//     });
+
+//     const variantIds = variants.map((variant) => variant._id);
+
+//     const variantDetails = await varientsDetails.find({
+//       pvid: { $in: variantIds },
+//     });
+
+//     const personalizedImages = await personalized.find({
+//       pvid: { $in: variantIds },
+//     });
+
+//     const productVariantDetails = products.map((product) => {
+//       const productVariants = variants.filter(
+//         (variant) => variant.pid.toString() === product._id.toString()
+//       );
+//       const productVariantDetail = productVariants.map((variant) => {
+//         const details = variantDetails.filter(
+//           (detail) => detail.pvid.toString() === variant._id.toString()
+//         );
+//         const personalized = personalizedImages.find(
+//           (personalized) =>
+//             personalized.pvid.toString() === variant._id.toString()
+//         );
+//         return {
+//           ...variant._doc,
+//           details,
+//           cropImgUrl: personalized ? personalized.cropImgUrl : null,
+//         };
+//       });
+//       return {
+//         ...product._doc,
+//         variants: productVariantDetail,
+//       };
+//     });
+
+//     const attributeIds = products.flatMap((product) => product.selectedAtt);
+
+//     const attributes = await attributeModal.find({
+//       _id: { $in: attributeIds },
+//     });
+
+//     const attributeTypeIds = attributes.map((attribute) => attribute._id);
+//     const attributeTypes = await productAttributeType.find({
+//       paid: { $in: attributeTypeIds },
+//     });
+
+//     const filterList = attributes.reduce((acc, attribute) => {
+//       const attributeName = attribute.name;
+//       const attributeType = productAttributeType.find(
+//         (type) => type.paid.toString() === attribute._id.toString()
+//       );
+//       if (!acc[attributeName]) {
+//         acc[attributeName] = [];
+//       }
+//       if (attributeType) {
+//         acc[attributeName] = [
+//           ...new Set([...acc[attributeName], ...attributeType.attvalue]),
+//         ];
+//       }
+//       return acc;
+//     }, {});
+
+//     res.json({ productVariantDetails, filterList });
+//   } catch (error) {
+//     res.status(500).json({ error: "Failed to fetch products" });
+//     console.log("Error in getActiveProductsById ", error);
+//   }
+// };
+
+
 export const getActiveProductsById = async (req, res) => {
   try {
     const productIds = req.query.ids;
@@ -368,18 +451,18 @@ export const getActiveProductsById = async (req, res) => {
     });
 
     const attributeTypeIds = attributes.map((attribute) => attribute._id);
-    const attributeTypes = await attributeType.find({
+    const attributeTypes = await productAttributeType.find({
       paid: { $in: attributeTypeIds },
     });
 
     const filterList = attributes.reduce((acc, attribute) => {
       const attributeName = attribute.name;
-      const attributeType = attributeTypes.find(
-        (type) => type.paid.toString() === attribute._id.toString()
-      );
       if (!acc[attributeName]) {
         acc[attributeName] = [];
       }
+      const attributeType = attributeTypes.find(
+        (type) => type.paid.toString() === attribute._id.toString()
+      );
       if (attributeType) {
         acc[attributeName] = [
           ...new Set([...acc[attributeName], ...attributeType.attvalue]),

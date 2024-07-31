@@ -174,18 +174,51 @@ function EditCollection() {
     setFilteredConditionValues((prev) => [...prev, []]);
   };
 
-  const handleRemoveFilter = (index) => {
+  // const handleRemoveFilter = (index) => {
+  //   setFormData((prevFormData) => {
+  //     const updatedStates = prevFormData.filterDivStates.filter(
+  //       (_, i) => i !== index
+  //     );
+  //     return { ...prevFormData, filterDivStates: updatedStates };
+  //   });
+  //   setFilteredConditionValues((prev) => {
+  //     const updatedFilteredConditionValues = prev.filter((_, i) => i !== index);
+  //     return updatedFilteredConditionValues;
+  //   });
+   
+  // };
+
+  const handleRemoveFilter = (indexToRemove) => {
     setFormData((prevFormData) => {
-      const updatedStates = prevFormData.filterDivStates.filter(
-        (_, i) => i !== index
-      );
-      return { ...prevFormData, filterDivStates: updatedStates };
-    });
-    setFilteredConditionValues((prev) => {
-      const updatedFilteredConditionValues = prev.filter((_, i) => i !== index);
-      return updatedFilteredConditionValues;
+      const updatedFilterDivStates = [...prevFormData.filterDivStates];
+      const updatedSelectedTitle = [...prevFormData.selectedTitle];
+      const updatedConditionValue = [...prevFormData.conditionValue];
+      const updatedInputValue = [...prevFormData.inputValue];
+
+      // Remove the filter from filterDivStates
+      updatedFilterDivStates.splice(indexToRemove, 1);
+
+      // Also remove the corresponding entries in selectedTitle, conditionValue, and inputValue
+      updatedSelectedTitle.splice(indexToRemove, 1);
+      updatedConditionValue.splice(indexToRemove, 1);
+      updatedInputValue.splice(indexToRemove, 1);
+
+      return {
+        ...prevFormData,
+        filterDivStates: updatedFilterDivStates,
+        selectedTitle: updatedSelectedTitle,
+        conditionValue: updatedConditionValue,
+        inputValue: updatedInputValue,
+        // If radioSelection is per filter, remove it similarly
+        // If it's global, handle it separately
+      };
     });
   };
+
+  useEffect(() => {
+    console.log("Form Data after removing filter:", formData);
+    console.log("Filtered Condition Values:", filteredConditionValues);
+  }, [formData, filteredConditionValues]);
 
   const fetchCollectionData = async (id) => {
     try {
@@ -413,12 +446,13 @@ function EditCollection() {
   const postCollection = async (payload) => {
     try {
       let id = params.id;
+      console.log("payload ", payload);
       const response = await API_WRAPPER.put(
         `/collection/update-collection/:${id}`,
         payload
       );
       if (response.status === 200) {
-        success("Success", "Collection created succesfully!");
+        success("Success", "Collection Edited succesfully!");
         navigate(PATHS.adminCollection);
       }
     } catch (error) {
@@ -450,6 +484,7 @@ function EditCollection() {
     const { filterDivCount, ...abstractedFormData } =
       updatedFormDataWithoutFilterDivStates;
 
+      console.log("abstractedFormData in dit Collection.js", abstractedFormData);
     await postCollection(abstractedFormData);
     // resetForm();
   };

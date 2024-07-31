@@ -263,9 +263,10 @@ export const updateCollection = async (req, res) => {
     radioSelection,
     collectionConditionId,
     conditionValue,
-    
+    selectedTitle,
   } = req.body;
 
+    console.log("req.body in update collection ",req.body);
   try {
     let idToUpdate = _id;
 
@@ -302,6 +303,7 @@ export const updateCollection = async (req, res) => {
         status,
         updatedAt: Date.now(),
         radioSelection,
+        selectedTitle,
       },
       { new: true, runValidators: true }
     );
@@ -310,6 +312,7 @@ export const updateCollection = async (req, res) => {
       return res.status(404).json({ error: "Failed to update collection" });
     }
 
+    console.log("updatedCollection ", updatedCollection);
     res.status(200).json(updatedCollection);
   } catch (error) {
     console.log("Error in updateCollection controller", error);

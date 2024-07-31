@@ -24,35 +24,46 @@ function CollectionProducts() {
   const getProducts = async () => {
     setLoading(true);
     const response = await API_WRAPPER.get(`/collection/${slug}`);
+    console.log("slug ", slug);
     const data = response.data;
-    const changedTitleFilterArr = data.collectionConditionId.map(
-      (conditionId, index) => ({
-        selectedTitle: data.selectedTitle[index],
-        conditionValue: data.conditionValue[index],
-        inputValue: data.inputValue[index],
-      })
-    );
+    if (data && data.collectionConditionId) {
+      console.log(
+        "data.collectionConditionId ",
+        data.collectionConditionId,
+        "data ",
+        data
+      );
+      alert("inside if ");
+      const changedTitleFilterArr = data.collectionConditionId.map(
+        
+        (conditionId, index) => ({
+          selectedTitle: data.selectedTitle[index],
+          conditionValue: data.conditionValue[index],
+          inputValue: data.inputValue[index],
+        })
+      );
 
-    const radioSelection = data.radioSelection;
+      const radioSelection = data.radioSelection;
 
-    const productsByConditionsRes = await API_WRAPPER.post(
-      "/collection/filter-data",
-      {
-        changedTitleFilterArr,
-        radioSelection,
-      }
-    );
+      const productsByConditionsRes = await API_WRAPPER.post(
+        "/collection/filter-data",
+        {
+          changedTitleFilterArr,
+          radioSelection,
+        }
+      );
 
-    const activeProducts = productsByConditionsRes.data.filter(
-      (product) => !response.data.diactiveProductId.includes(product._id)
-    );
-    const activeProductIds = activeProducts.map((product) => product._id);
-    const queryString = activeProductIds.map((id) => `ids[]=${id}`).join("&");
-    const result = await API_WRAPPER.get(
-      `/product/get-all-active-ProductsById?${queryString}`
-    );
-    setProductVariantDetails(result.data.productVariantDetails);
-    setFilterList(result.data.filterList);
+      const activeProducts = productsByConditionsRes.data.filter(
+        (product) => !response.data.diactiveProductId.includes(product._id)
+      );
+      const activeProductIds = activeProducts.map((product) => product._id);
+      const queryString = activeProductIds.map((id) => `ids[]=${id}`).join("&");
+      const result = await API_WRAPPER.get(
+        `/product/get-all-active-ProductsById?${queryString}`
+      );
+      setProductVariantDetails(result.data.productVariantDetails);
+      setFilterList(result.data.filterList);
+    }
     setLoading(false);
   };
 
