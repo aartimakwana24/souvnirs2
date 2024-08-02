@@ -9,6 +9,7 @@ import {
   deleteCategory,
   getCategoryById,
   updateParentCategory,
+  getCategoryBySlug,
 } from "../controller/categoryController.js";
 categoriesRouter.post("/category/add-category",addCategoryController);
 categoriesRouter.get(
@@ -44,5 +45,5 @@ categoriesRouter.get(
   authMiddleware(["vendor", "admin", "customer"]),
   getCategoryById
 );
-
+categoriesRouter.get("/category/:slug",getCategoryBySlug);
 export default categoriesRouter;

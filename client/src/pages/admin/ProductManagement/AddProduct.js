@@ -1,15 +1,13 @@
 import "react-quill/dist/quill.snow.css";
 import Header from "../../../components/ui/Header/index.js";
 import productManagementImage from "../../../assets/images/productManagementImage.png";
-import {
-  fadeInFromLeftVariant,
-} from "../../../animations/index";
+import { fadeInFromLeftVariant } from "../../../animations/index";
 import { useState, useEffect } from "react";
-import {useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { nanoid } from "nanoid";
 import { motion } from "framer-motion";
 import "./addProduct.css";
-import { debouncedShowToast } from "../../../utils/index.js";
+import { debouncedShowToast, swalError } from "../../../utils/index.js";
 import { useDispatch } from "react-redux";
 import { setProduct } from "../../../features/appConfig/addProductSlice.js";
 import API_WRAPPER from "../../../api/index.js";
@@ -19,6 +17,7 @@ function AddProduct() {
   const dispatch = useDispatch();
   const [vendorsList, setVendorsList] = useState([]);
   const [formData, setFormData] = useState({});
+  const [showModal, setShowModal] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -30,9 +29,10 @@ function AddProduct() {
       const response = await API_WRAPPER.get("/vendors/get-vendors");
       if (response.status === 200) {
         setVendorsList(response?.data?.data);
-        // need to check what to be done here
         if (vendorsList.length == 1) {
-          debouncedShowToast("vendor list is empty array", "error");
+          swalError("error", "vendor list is empty array", () => {
+            setShowModal(false);
+          });
         }
       }
     } catch (error) {
@@ -107,6 +107,21 @@ function AddProduct() {
                     </select>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div className=" bg-light p-4 rounded border my-1">
+              <div className="form-group">
+                <label htmlFor="slug" className="form-label">
+                  Slug<span className="text-danger">*</span>
+                </label>
+                <input
+                  onChange={(e) => handleInputChange(e)}
+                  className="form-control"
+                  type="text"
+                  name="slug"
+                  id="slug"
+                />
               </div>
             </div>
 

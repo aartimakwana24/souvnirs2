@@ -9,6 +9,7 @@ import debounce from "lodash/debounce";
 import ProductCardMini from "../cards/ProductCardMini";
 import { baseUrl } from "../../../api";
 import FilterCard from "../cards/FilterCard";
+import { swalError } from "../../../utils";
 
 function CategoryProducts() {
   const [filterType, setFilterType] = useState(false);
@@ -20,39 +21,24 @@ function CategoryProducts() {
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(2);
   const [selctedFilter, setSelctedFilter] = useState("new");
+  const [showModal , setShowModal] =useState(false);
+
   const { slug } = useParams();
   const getProducts = async () => {
     setLoading(true);
-    // const response = await API_WRAPPER.get(`/category/${slug}`);
-    // const data = response.data;
-    // const changedTitleFilterArr = data.collectionConditionId.map(
-    //   (conditionId, index) => ({
-    //     selectedTitle: data.selectedTitle[index],
-    //     conditionValue: data.conditionValue[index],
-    //     inputValue: data.inputValue[index],
-    //   })
-    // );
+    const response = await API_WRAPPER.get(`/category/${slug}`);
+    if(response.status == 200){
+      const data = response.data;
+      console.log("Response ", data);
+     setProductVariantDetails(data.productVariantDetails);
+     setFilterList(data.filterList);
 
-    // const radioSelection = data.radioSelection;
-
-    // const productsByConditionsRes = await API_WRAPPER.post(
-    //   "/collection/filter-data",
-    //   {
-    //     changedTitleFilterArr,
-    //     radioSelection,
-    //   }
-    // );
-
-    // const activeProducts = productsByConditionsRes.data.filter(
-    //   (product) => !response.data.diactiveProductId.includes(product._id)
-    // );
-    // const activeProductIds = activeProducts.map((product) => product._id);
-    // const queryString = activeProductIds.map((id) => `ids[]=${id}`).join("&");
-    // const result = await API_WRAPPER.get(
-    //   `/product/get-all-active-ProductsById?${queryString}`
-    // );
-    // setProductVariantDetails(result.data.productVariantDetails);
-    // setFilterList(result.data.filterList);
+    }else{
+      swalError("Warning ","No Category found",()=>{
+        setShowModal(false);
+      });
+    }
+  
     setLoading(false);
   };
 
@@ -138,29 +124,32 @@ function CategoryProducts() {
             {loading ? (
               <p>Loading...</p>
             ) : (
-              <div className="row">
-                {productVariantDetails.map((product) =>
-                  product.variants.flatMap((variant) =>
-                    variant.details.map((detail) => (
-                      <>
-                        <ProductCardMini
-                          key={detail._id}
-                          id={detail._id}
-                          price={detail.price}
-                          slug={product.slug}
-                          rating={4.5}
-                          desc={detail.desc}
-                          title={product.name}
-                          image={
-                            variant.cropImgUrl ||
-                            `${baseUrl}/${detail.images[0]}`
-                          }
-                        />
-                      </>
-                    ))
-                  )
-                )}
-              </div>
+              <>
+                {console.log("productVariantDetails ", productVariantDetails)}
+                <div className="row">
+                  {productVariantDetails.map((product) =>
+                    product.variants.flatMap((variant) =>
+                      variant.details.map((detail) => (
+                        <>
+                          <ProductCardMini
+                            key={detail._id}
+                            id={detail._id}
+                            price={detail.price}
+                            slug={product.slug}
+                            rating={4.5}
+                            desc={detail.desc}
+                            title={product.name}
+                            image={
+                              variant.cropImgUrl ||
+                              `${baseUrl}/${detail.images[0]}`
+                            }
+                          />
+                        </>
+                      ))
+                    )
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>

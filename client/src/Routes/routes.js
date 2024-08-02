@@ -29,6 +29,7 @@ import EditChildMenus from "../pages/admin/EditChildMenus.js";
 import LandingPage from "../pages/shop/LandingPage.js";
 import CollectionProducts from "../components/shop/components/CollectionProducts.js";
 import CategoryProducts from "../components/shop/components/CategoryProducts.js";
+import ProductInfo from "../components/shop/components/ProductInfo.js";
 
 export const adminRoutes = [
   // {
@@ -228,5 +229,10 @@ export const shopRoutes = [
     id: nanoid(),
     path: `${PATHS.shopCategory}/:slug`,
     Component: CategoryProducts,
+  },
+  {
+    id: nanoid(),
+    path: `${PATHS.productInfo}/:slug`,
+    Component: ProductInfo,
   },
 ];

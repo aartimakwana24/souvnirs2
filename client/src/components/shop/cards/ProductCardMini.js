@@ -21,7 +21,6 @@ const ProductCardMini = ({
 }) => {
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
-
   const stripHtmlTags = (html) => {
     const doc = new DOMParser().parseFromString(html, "text/html");
     return doc.body.textContent || "";
@@ -33,7 +32,7 @@ const ProductCardMini = ({
       animate="animate"
       initial="initial"
       className={`col-lg-6 col-md-12 col-sm-12 mb-4`}
-      // onClick={() => navigate(`/productInfo/${slug}`)}
+      onClick={() => navigate(`/productInfo/${slug}`)}
     >
       <div className={`card ${showBorder ? "border" : ""} shadow-lg`}>
         <div className="row g-0 align-items-center p-3">

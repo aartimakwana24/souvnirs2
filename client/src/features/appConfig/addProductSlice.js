@@ -24,6 +24,7 @@ export const productSlice = createSlice({
     setProduct: (state, action) => {
       const {
         name,
+        slug,
         description,
         vendorId,
         categoryId,
@@ -39,6 +40,9 @@ export const productSlice = createSlice({
       } = action.payload;
       if (name) {
         state.name = name;
+      }
+      if (slug) {
+        state.slug = slug;
       }
       if (description) {
         state.desc = description;
@@ -84,6 +88,4 @@ export const productSlice = createSlice({
 });
 
 export const { setProduct } = productSlice.actions;
-// Action creators are generated for each case reducer function
-
 export default productSlice.reducer;

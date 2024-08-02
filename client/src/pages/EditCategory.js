@@ -8,7 +8,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { debouncedShowToast } from "../utils";
 import { PATHS } from "../Routes/paths";
-import success from "../utils";
+import success ,{swalError} from "../utils";
 
 function EditCategory() {
   const [attributesList, setAttributesList] = useState([]);
@@ -18,7 +18,7 @@ function EditCategory() {
   const [formData, setFormData] = useState({});
   const [parentCategories, setParentCategories] = useState([]);
   const [parentCategoriesName, setParentCategoriesName] = useState();
-
+  const [showModal ,setShowModal] = useState(false);
 
   const navigate = useNavigate();
   const params = useParams();
@@ -43,14 +43,13 @@ function EditCategory() {
 
   const getParentCategories = async () => {
     // const response = await API_WRAPPER.get("/category/parent/");
-   try {
-     const response = await API_WRAPPER.get(`/category/parent/${params.id}`);
-     setParentCategories(response.data.allParentCatData);
-     setParentCategoriesName(response.data.parentData[0].name);
-     
-   } catch (error) {
-    console.log("Error in Edit Categories getParentCategories ",error);
-   }
+    try {
+      const response = await API_WRAPPER.get(`/category/parent/${params.id}`);
+      setParentCategories(response.data.allParentCatData);
+      setParentCategoriesName(response.data.parentData[0].name);
+    } catch (error) {
+      console.log("Error in Edit Categories getParentCategories ", error);
+    }
   };
 
   const getCategoryData = async () => {
@@ -106,25 +105,33 @@ function EditCategory() {
       let data = {
         ...formData,
         attributes: selectedAttributes.map((attribute) => attribute._id),
+      };
+      if (response.data.msg) {
+        swalError("Warning", response.data.msg, () => {
+          setShowModal(false);
+        });
       }
       const response = await API_WRAPPER.put(
-        `/category/update-category/${params.id}`,data
+        `/category/update-category/${params.id}`,
+        data
       );
       navigate(PATHS.adminCategories);
-      success("Edit Category","Category Edited Sccesfully!");
+      success("Edit Category", "Category Edited Sccesfully!");
     } catch (error) {
-      //   debouncedShowToast("Something went wrong", "error");
-      alert("error ", error);
+       swalError("Warning","This slug is already exist", () => {
+         setShowModal(false);
+       });
+       console.log("Error in Edit Category ",error)
     }
   };
 
-   const handleAttributeDelete = (attribute) => {
-     setSelectedAttributes((prevAttributes) =>
-       prevAttributes.filter(
-         (selectedAttribute) => selectedAttribute._id !== attribute._id
-       )
-     );
-   };
+  const handleAttributeDelete = (attribute) => {
+    setSelectedAttributes((prevAttributes) =>
+      prevAttributes.filter(
+        (selectedAttribute) => selectedAttribute._id !== attribute._id
+      )
+    );
+  };
 
   return (
     <div className="container my-3">
@@ -196,6 +203,39 @@ function EditCategory() {
                 />
               </div>
               <div className="col col-lg-6 col-md-12 col-12">
+                <label for="parentCategory" className="form-label">
+                  Parent Category {parentCategoriesName}
+                </label>
+                <select
+                  className="form-select"
+                  onChange={(e) => handleInputChange(e)}
+                  name="parentId"
+                >
+                  <option disabled selected>
+                    {parentCategoriesName}
+                  </option>
+                  {parentCategories.map((parent) => (
+                    <option key={parent._id} value={parent._id}>
+                      {parent.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col col-lg-6 col-md-12 col-12">
+                <label for="name" className="form-label">
+                  Slug
+                </label>
+                <input
+                  placeholder="Category Name"
+                  className="form-control"
+                  onChange={handleInputChange}
+                  defaultValue={formData?.slug}
+                  type="text"
+                  name="slug"
+                  id="slug"
+                />
+              </div>
+              <div className="col col-lg-6 col-md-12 col-12">
                 <input
                   placeholder="Search Attributes"
                   className="form-control mb-2"
@@ -240,32 +280,12 @@ function EditCategory() {
                   })}
                 </div>
               </div>
-              <div className="col col-lg-6 col-md-12 col-12">
-                <label for="parentCategory" className="form-label">
-                  Parent Category {parentCategoriesName}
-                </label>
-                <select
-                  className="form-select"
-                  onChange={(e) => handleInputChange(e)}
-                  name="parentId"
-                >
-                  <option disabled selected>
-                  {parentCategoriesName}
-                  </option>
-                  {parentCategories.map((parent) => (
-                    <option key={parent._id} value={parent._id}>
-                      {parent.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  className="btn btn-primary w-25 mt-4"
-                  onClick={editCategory}
-                >
-                 Update Category
-                </button>
-              </div>
-              
+              <button
+                className="btn btn-primary w-25 mt-4"
+                onClick={editCategory}
+              >
+                Update Category
+              </button>
             </form>
           </div>
         </div>

@@ -24,6 +24,9 @@ const categoriesSchema = new mongoose.Schema(
       type: String,
       default: "0",
     },
+    slug: {
+      type: String,
+    },
     createdTime: {
       type: Date,
     },

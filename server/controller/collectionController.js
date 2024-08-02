@@ -72,7 +72,6 @@ const getVarientsDetailsQuery = async (
 
 export const getRawDataForFilter = async (req, res) => {
   try {
-    console.log("req.body is ", req.body);
     const conditionsArray = req.body.changedTitleFilterArr;
     console.log(
       "req.body.changedTitleFilterArr.selectedTitle ",
@@ -266,7 +265,6 @@ export const updateCollection = async (req, res) => {
     selectedTitle,
   } = req.body;
 
-    console.log("req.body in update collection ",req.body);
   try {
     let idToUpdate = _id;
 
@@ -288,7 +286,6 @@ export const updateCollection = async (req, res) => {
         updatedConditionValues.push(conditionDoc._id);
       }
     }
-    console.log("updatedConditionValues ", updatedConditionValues);
 
     const updatedCollection = await Collection.findByIdAndUpdate(
       idToUpdate,
@@ -312,7 +309,6 @@ export const updateCollection = async (req, res) => {
       return res.status(404).json({ error: "Failed to update collection" });
     }
 
-    console.log("updatedCollection ", updatedCollection);
     res.status(200).json(updatedCollection);
   } catch (error) {
     console.log("Error in updateCollection controller", error);
@@ -340,7 +336,6 @@ export const deleteCollectionById = async (req, res) => {
 
 export const getCollectionBySlug = async (req, res) => {
   try {
-    console.log("req.params ", req.params);
     const slug = req.params.slug.trim(); 
     const normalizedSlug = slug.replace(/\s+/g, " ");
     const regex = new RegExp(
@@ -352,7 +347,6 @@ export const getCollectionBySlug = async (req, res) => {
       slug: { $regex: regex },
     });
     if (collectionData) {
-      console.log("collectionData ", collectionData);
       res.status(200).json(collectionData);
     } else {
       res.status(200).json({msg:"No collection found based on that slug"});

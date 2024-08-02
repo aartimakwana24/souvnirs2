@@ -11,15 +11,19 @@ import personalized from "../schema/productVariantsPersonalized.js";
 
 export const createProduct = async (req, res) => {
   try {
-    let { name, vendorId, attributes, categoryId } = req.body;
+    let { name, slug, vendorId, attributes, categoryId } = req.body;
     if (req.role == "vendor") {
       vendorId = req.userId;
     }
 
     let attArr = attributes.map((att) => att._id);
-
+    const existingSlug = await productModal.findOne({slug:slug});
+    if(existingSlug){
+    return res.status(200).json({msg:"This slug is already exist enter another slug"});
+    }
     const product = new productModal({
       name,
+      slug,
       vendorId,
       selectedAtt: attArr,
       categoryId,
@@ -266,9 +270,15 @@ export const getProductVariants2 = async (req, res) => {
 
 export const updateProduct2 = async (req, res) => {
   try {
-    const { vendorId, name, selectedAttributes, categoryId } =
+    const { vendorId, name, slug, selectedAttributes, categoryId } =
       req.body.formData;
     const productId = req.params.id;
+     const existingSlug = await productModal.findOne({ slug: slug });
+     if (existingSlug) {
+       return res
+         .status(201)
+         .json({ msg: "This slug is already exist enter another slug" });
+     }
     const selectedAttIds = selectedAttributes.map((attr) => attr._id);
     const id = (await productVarients2.findById(productId)).pid.toString();
 
@@ -298,9 +308,9 @@ export const updateProduct2 = async (req, res) => {
       await attributeType.save();
     }
 
-    const updatedProduct = await productModal.findByIdAndUpdate(
+    await productModal.findByIdAndUpdate(
       id,
-      { vendorId, name, selectedAtt: selectedAttIds, categoryId },
+      { vendorId, name, slug, selectedAtt: selectedAttIds, categoryId },
       { new: true }
     );
 
@@ -320,86 +330,7 @@ export const updateProduct2 = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
-// export const getActiveProductsById = async (req, res) => {
-//   try {
-//     const productIds = req.query.ids;
-//     const products = await productModal.find({ _id: { $in: productIds } });
-//     const productObjectIds = products.map((product) => product._id);
-
-//     const variants = await productVarients2.find({
-//       pid: { $in: productObjectIds },
-//     });
-
-//     const variantIds = variants.map((variant) => variant._id);
-
-//     const variantDetails = await varientsDetails.find({
-//       pvid: { $in: variantIds },
-//     });
-
-//     const personalizedImages = await personalized.find({
-//       pvid: { $in: variantIds },
-//     });
-
-//     const productVariantDetails = products.map((product) => {
-//       const productVariants = variants.filter(
-//         (variant) => variant.pid.toString() === product._id.toString()
-//       );
-//       const productVariantDetail = productVariants.map((variant) => {
-//         const details = variantDetails.filter(
-//           (detail) => detail.pvid.toString() === variant._id.toString()
-//         );
-//         const personalized = personalizedImages.find(
-//           (personalized) =>
-//             personalized.pvid.toString() === variant._id.toString()
-//         );
-//         return {
-//           ...variant._doc,
-//           details,
-//           cropImgUrl: personalized ? personalized.cropImgUrl : null,
-//         };
-//       });
-//       return {
-//         ...product._doc,
-//         variants: productVariantDetail,
-//       };
-//     });
-
-//     const attributeIds = products.flatMap((product) => product.selectedAtt);
-
-//     const attributes = await attributeModal.find({
-//       _id: { $in: attributeIds },
-//     });
-
-//     const attributeTypeIds = attributes.map((attribute) => attribute._id);
-//     const attributeTypes = await productAttributeType.find({
-//       paid: { $in: attributeTypeIds },
-//     });
-
-//     const filterList = attributes.reduce((acc, attribute) => {
-//       const attributeName = attribute.name;
-//       const attributeType = productAttributeType.find(
-//         (type) => type.paid.toString() === attribute._id.toString()
-//       );
-//       if (!acc[attributeName]) {
-//         acc[attributeName] = [];
-//       }
-//       if (attributeType) {
-//         acc[attributeName] = [
-//           ...new Set([...acc[attributeName], ...attributeType.attvalue]),
-//         ];
-//       }
-//       return acc;
-//     }, {});
-
-//     res.json({ productVariantDetails, filterList });
-//   } catch (error) {
-//     res.status(500).json({ error: "Failed to fetch products" });
-//     console.log("Error in getActiveProductsById ", error);
-//   }
-// };
-
-
+// --------
 export const getActiveProductsById = async (req, res) => {
   try {
     const productIds = req.query.ids;

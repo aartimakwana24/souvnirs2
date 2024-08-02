@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API_WRAPPER from "../../../api";
-import { debouncedShowToast } from "../../../utils";
+import { debouncedShowToast, swalError } from "../../../utils";
 import success from "../../../utils";
 
 function useCategory() {
@@ -11,7 +11,8 @@ function useCategory() {
   const [selectedAttributes, setSelectedAttributes] = useState([]);
   const [formData, setFormData] = useState({});
   const [parentCategories, setParentCategories] = useState([]);
-
+  const [showModal ,setShowModal] = useState(false);
+  
   const navigate = useNavigate();
 
   const getAllAttributes = async () => {
@@ -32,6 +33,7 @@ function useCategory() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({ ...prevData, [name]: value }));
+    console.log("FormData in caregort ",formData);
   };
 
   const handleAddAttribute = (attribute) => {
@@ -51,6 +53,11 @@ function useCategory() {
         ...formData,
         attributes: selectedAttributes.map((item) => item._id),
       });
+      if(response.data.msg){
+        swalError("Warning", response.data.msg ,()=>{
+          setShowModal(false);
+        });
+      }
       if (response.status === 201) {
         success("Category Added", "Category added successfully!");
         navigate("/admin/categories");

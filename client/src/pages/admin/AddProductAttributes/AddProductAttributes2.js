@@ -12,7 +12,7 @@ import { Tooltip } from "react-tooltip";
 import useCategories from "../../../hook/useCategories";
 import AttributeBannerImage from "../../../assets/images/attributesImage.png";
 import Card from "../../../components/ui/Card/index.js";
-
+        
 function AddProductAttributes() {
   const [categoryId, setCategoryId] = useState("");
   const [categoryName, setCategoryName] = useState("");

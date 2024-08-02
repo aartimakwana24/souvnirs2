@@ -1,182 +1,412 @@
+// import { useParams } from "react-router-dom";
+// import { useEffect, useState } from "react";
+// import { MdOutlineDashboard } from "react-icons/md";
+// import { AiOutlineUnorderedList } from "react-icons/ai";
+// import { nanoid } from "nanoid";
+// import API_WRAPPER from "../../../api";
+// import { Slider } from "antd";
+// import debounce from "lodash/debounce";
+// import ProductCardMini from "../cards/ProductCardMini";
+// import { baseUrl } from "../../../api";
+// import FilterCard from "../cards/FilterCard";
+// import success, { swalError } from "../../../utils";
+
+// function CollectionProducts() {
+//   const [filterType, setFilterType] = useState(false);
+//   const [inputRangeValue, setInputRangeValue] = useState([0, 100000]);
+//   const [filterList, setFilterList] = useState();
+//   const [productVariantDetails, setProductVariantDetails] = useState([]);
+//   const [filters, setFilters] = useState([]);
+//   const [loading, setLoading] = useState(false);
+//   const [page, setPage] = useState(1);
+//   const [lastPage, setLastPage] = useState(2);
+//   const [selctedFilter, setSelctedFilter] = useState("new");
+//   const [showModal ,setShowModal] = useState(false);
+//   const { slug } = useParams();
+//   const getProducts = async () => {
+//     setLoading(true);
+//     const response = await API_WRAPPER.get(`/collection/${slug}`);
+//     const data = response.data;
+//     console.log("data ",data);
+//     if(data.msg){
+//       swalError("Warning ",data.msg,()=>{
+//         setShowModal(false);
+//       })
+//     }
+//     if (data && data.collectionConditionId) {
+//       const changedTitleFilterArr = data.collectionConditionId.map(
+
+//         (conditionId, index) => ({
+//           selectedTitle: data.selectedTitle[index],
+//           conditionValue: data.conditionValue[index],
+//           inputValue: data.inputValue[index],
+//         })
+//       );
+
+//       const radioSelection = data.radioSelection;
+
+//       const productsByConditionsRes = await API_WRAPPER.post(
+//         "/collection/filter-data",
+//         {
+//           changedTitleFilterArr,
+//           radioSelection,
+//         }
+//       );
+
+//       const activeProducts = productsByConditionsRes.data.filter(
+//         (product) => !response.data.diactiveProductId.includes(product._id)
+//       );
+//       const activeProductIds = activeProducts.map((product) => product._id);
+//       const queryString = activeProductIds.map((id) => `ids[]=${id}`).join("&");
+//       const result = await API_WRAPPER.get(
+//         `/product/get-all-active-ProductsById?${queryString}`
+//       );
+//       setProductVariantDetails(result.data.productVariantDetails);
+//       setFilterList(result.data.filterList);
+//     }
+//     setLoading(false);
+//   };
+
+//   useEffect(() => {
+//     debounce(() => {
+//       getProducts();
+//     }, 100)();
+//   }, [slug, filters, inputRangeValue, selctedFilter, page]);
+
+//   const handleFilterSelection = (filterData) => {
+//     const filterKey = filterData.key;
+//     const filterValues = filterData.values;
+//     const existingFilterIndex = filters.findIndex(
+//       (filter) => filter.key === filterKey
+//     );
+
+//     if (existingFilterIndex !== -1) {
+//       const updatedFilters = [...filters];
+//       updatedFilters[existingFilterIndex].values = filterValues;
+//       setFilters(updatedFilters);
+//     } else {
+//       const newFilter = {
+//         key: filterKey,
+//         values: filterValues,
+//       };
+//       setFilters((prevFilters) => [...prevFilters, newFilter]);
+//     }
+//   };
+//   return (
+//     <>
+//       <div className="row">
+//         <div className="col-lg-3 col-md-12 col-12">
+//           <div className="container mt-4">
+//             {filterList &&
+//               Object.keys(filterList).map((filter) => (
+//                 <FilterCard
+//                   key={filter}
+//                   title="Product Filter"
+//                   onSelect={handleFilterSelection}
+//                   heading={filter}
+//                   filters={filterList[filter].map((filterName) => ({
+//                     filterName,
+//                   }))}
+//                 />
+//               ))}
+//           </div>
+//         </div>
+//         <div className="col-lg-9 col-md-12 col-12">
+//           <div className="d-flex justify-content-between align-items-center">
+//             <div className="d-flex gap-4 my-2 mt-3">
+//               <button
+//                 onClick={() => setFilterType((prevState) => !prevState)}
+//                 className={`btn btn-square ${
+//                   filterType ? "btn-primary" : "btn-outline-primary"
+//                 }`}
+//               >
+//                 <MdOutlineDashboard className="fs-4" />
+//               </button>
+//               <button
+//                 onClick={() => setFilterType((prevState) => !prevState)}
+//                 className={`btn btn-square ${
+//                   !filterType ? "btn-primary" : "btn-outline-primary"
+//                 }`}
+//               >
+//                 <AiOutlineUnorderedList className="fs-4" />
+//               </button>
+//               <select
+//                 // onChange={(e) => setSelectedFilter(e.target.value)}
+//                 className="form-select"
+//                 name="defaultSorting"
+//                 id="defaultSorting"
+//                 // value={selectedFilter}
+//               >
+//                 <option value="new">What's new</option>
+//                 <option value="discount">Better Discount</option>
+//                 <option value="htl">Price: High to Low</option>
+//                 <option value="lth">Price: Low to High</option>
+//                 <option value="rating">Customer Rating</option>
+//               </select>
+//             </div>
+//           </div>
+//           <div className="py-4">
+//             {loading ? (
+//               <p>Loading...</p>
+//             ) : (
+//               <div className="row">
+//                 {console.log("productVariantDetails ", productVariantDetails)}
+//                 {productVariantDetails.map((product) =>
+//                   product.variants.flatMap((variant) =>
+//                     variant.details.map((detail) => (
+//                       <>
+//                         <ProductCardMini
+//                           key={detail._id}
+//                           id={detail._id}
+//                           price={detail.price}
+//                           slug={product.slug}
+//                           rating={4.5}
+//                           desc={detail.desc}
+//                           title={product.name}
+//                           image={
+//                             variant.cropImgUrl ||
+//                             `${baseUrl}/${detail.images[0]}`
+//                           }
+//                         />
+//                       </>
+//                     ))
+//                   )
+//                 )}
+//               </div>
+//             )}
+//           </div>
+//         </div>
+//       </div>
+//     </>
+//   );
+// }
+
+// export default CollectionProducts;
+
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { MdOutlineDashboard } from "react-icons/md";
 import { AiOutlineUnorderedList } from "react-icons/ai";
-import { nanoid } from "nanoid";
-import API_WRAPPER from "../../../api";
-import { Slider } from "antd";
 import debounce from "lodash/debounce";
+import API_WRAPPER from "../../../api";
 import ProductCardMini from "../cards/ProductCardMini";
 import { baseUrl } from "../../../api";
 import FilterCard from "../cards/FilterCard";
+import success, { swalError } from "../../../utils";
 
 function CollectionProducts() {
   const [filterType, setFilterType] = useState(false);
   const [inputRangeValue, setInputRangeValue] = useState([0, 100000]);
-  const [filterList, setFilterList] = useState();
+  const [filterList, setFilterList] = useState([]);
   const [productVariantDetails, setProductVariantDetails] = useState([]);
   const [filters, setFilters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(2);
-  const [selctedFilter, setSelctedFilter] = useState("new");
+  const [selectedFilter, setSelectedFilter] = useState("new");
+  const [showModal, setShowModal] = useState(false);
   const { slug } = useParams();
-  const getProducts = async () => {
+
+  const getProducts = useCallback(async () => {
     setLoading(true);
-    const response = await API_WRAPPER.get(`/collection/${slug}`);
-    console.log("slug ", slug);
-    const data = response.data;
-    if (data && data.collectionConditionId) {
-      console.log(
-        "data.collectionConditionId ",
-        data.collectionConditionId,
-        "data ",
-        data
-      );
-      alert("inside if ");
-      const changedTitleFilterArr = data.collectionConditionId.map(
-        
-        (conditionId, index) => ({
-          selectedTitle: data.selectedTitle[index],
-          conditionValue: data.conditionValue[index],
-          inputValue: data.inputValue[index],
-        })
-      );
+    try {
+      const response = await API_WRAPPER.get(`/collection/${slug}`);
+      const data = response.data;
 
-      const radioSelection = data.radioSelection;
+      if (data.msg) {
+        swalError("Warning", data.msg, () => {
+          setShowModal(false);
+        });
+        return;
+      }
 
-      const productsByConditionsRes = await API_WRAPPER.post(
-        "/collection/filter-data",
-        {
-          changedTitleFilterArr,
-          radioSelection,
+      if (data && data.collectionConditionId) {
+        const changedTitleFilterArr = data.collectionConditionId.map(
+          (conditionId, index) => ({
+            selectedTitle: data.selectedTitle[index],
+            conditionValue: data.conditionValue[index],
+            inputValue: data.inputValue[index],
+          })
+        );
+
+        const productsByConditionsRes = await API_WRAPPER.post(
+          "/collection/filter-data",
+          {
+            changedTitleFilterArr,
+            radioSelection: data.radioSelection,
+          }
+        );
+
+        const activeProducts = productsByConditionsRes.data.filter(
+          (product) => !response.data.diactiveProductId.includes(product._id)
+        );
+
+        const activeProductIds = activeProducts.map((product) => product._id);
+        const queryString = activeProductIds
+          .map((id) => `ids[]=${id}`)
+          .join("&");
+
+        const result = await API_WRAPPER.get(
+          `/product/get-all-active-ProductsById?${queryString}`
+        );
+
+        let productVariants = result.data.productVariantDetails;
+
+        const filterMap = filters.reduce((acc, filter) => {
+          acc[filter.key] = filter.values;
+          return acc;
+        }, {});
+
+        function isVariantMatching(variant, filterMap) {
+          return Object.keys(filterMap).every((key) => {
+            const filterValues = filterMap[key];
+
+            if (filterValues.length === 0) {
+              return true;
+            }
+
+            const variantValue = (variant[key] || "").toLowerCase();
+            const normalizedFilterValues = filterValues.map((value) =>
+              value.toLowerCase()
+            );
+
+            return normalizedFilterValues.includes(variantValue);
+          });
         }
-      );
 
-      const activeProducts = productsByConditionsRes.data.filter(
-        (product) => !response.data.diactiveProductId.includes(product._id)
-      );
-      const activeProductIds = activeProducts.map((product) => product._id);
-      const queryString = activeProductIds.map((id) => `ids[]=${id}`).join("&");
-      const result = await API_WRAPPER.get(
-        `/product/get-all-active-ProductsById?${queryString}`
-      );
-      setProductVariantDetails(result.data.productVariantDetails);
-      setFilterList(result.data.filterList);
+        const filteredProducts = productVariants
+          .map((product) => {
+            const matchingVariants = product.variants.filter((variantObj) =>
+              variantObj.varients.some((variant) =>
+                isVariantMatching(variant, filterMap)
+              )
+            );
+
+            return {
+              ...product,
+              variants: matchingVariants,
+            };
+          })
+          .filter((product) => product.variants.length > 0);
+
+        setProductVariantDetails(filteredProducts);
+        setFilterList(result.data.filterList);
+      }
+    } catch (error) {
+      console.error("Error in CollectionProducts.js", error);
+      swalError("Error", "Failed to fetch products.", () => {
+        setShowModal(false);
+      });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, [slug, filters, inputRangeValue, selectedFilter, page]);
 
   useEffect(() => {
-    debounce(() => {
-      getProducts();
-    }, 100)();
-  }, [slug, filters, inputRangeValue, selctedFilter, page]);
+    const debouncedGetProducts = debounce(getProducts, 300);
+    debouncedGetProducts();
+    return () => {
+      debouncedGetProducts.cancel();
+    };
+  }, [getProducts]);
 
   const handleFilterSelection = (filterData) => {
-    const filterKey = filterData.key;
-    const filterValues = filterData.values;
-    const existingFilterIndex = filters.findIndex(
-      (filter) => filter.key === filterKey
-    );
+    const { key, values } = filterData;
+    setFilters((prevFilters) => {
+      const existingFilterIndex = prevFilters.findIndex(
+        (filter) => filter.key === key
+      );
 
-    if (existingFilterIndex !== -1) {
-      const updatedFilters = [...filters];
-      updatedFilters[existingFilterIndex].values = filterValues;
-      setFilters(updatedFilters);
-    } else {
-      const newFilter = {
-        key: filterKey,
-        values: filterValues,
-      };
-      setFilters((prevFilters) => [...prevFilters, newFilter]);
-    }
+      if (existingFilterIndex !== -1) {
+        const updatedFilters = [...prevFilters];
+        updatedFilters[existingFilterIndex].values = values;
+        return updatedFilters;
+      } else {
+        return [...prevFilters, { key, values }];
+      }
+    });
   };
+
   return (
-    <>
-      <div className="row">
-        <div className="col-lg-3 col-md-12 col-12">
-          <div className="container mt-4">
-            {filterList &&
-              Object.keys(filterList).map((filter) => (
-                <FilterCard
-                  key={filter}
-                  title="Product Filter"
-                  onSelect={handleFilterSelection}
-                  heading={filter}
-                  filters={filterList[filter].map((filterName) => ({
-                    filterName,
-                  }))}
-                />
-              ))}
-          </div>
-        </div>
-        <div className="col-lg-9 col-md-12 col-12">
-          <div className="d-flex justify-content-between align-items-center">
-            <div className="d-flex gap-4 my-2 mt-3">
-              <button
-                onClick={() => setFilterType((prevState) => !prevState)}
-                className={`btn btn-square ${
-                  filterType ? "btn-primary" : "btn-outline-primary"
-                }`}
-              >
-                <MdOutlineDashboard className="fs-4" />
-              </button>
-              <button
-                onClick={() => setFilterType((prevState) => !prevState)}
-                className={`btn btn-square ${
-                  !filterType ? "btn-primary" : "btn-outline-primary"
-                }`}
-              >
-                <AiOutlineUnorderedList className="fs-4" />
-              </button>
-              <select
-                // onChange={(e) => setSelectedFilter(e.target.value)}
-                className="form-select"
-                name="defaultSorting"
-                id="defaultSorting"
-                // value={selectedFilter}
-              >
-                <option value="new">What's new</option>
-                <option value="discount">Better Discount</option>
-                <option value="htl">Price: High to Low</option>
-                <option value="lth">Price: Low to High</option>
-                <option value="rating">Customer Rating</option>
-              </select>
-            </div>
-          </div>
-          <div className="py-4">
-            {loading ? (
-              <p>Loading...</p>
-            ) : (
-              <div className="row">
-                {productVariantDetails.map((product) =>
-                  product.variants.flatMap((variant) =>
-                    variant.details.map((detail) => (
-                      <>
-                        <ProductCardMini
-                          key={detail._id}
-                          id={detail._id}
-                          price={detail.price}
-                          slug={product.slug}
-                          rating={4.5}
-                          desc={detail.desc}
-                          title={product.name}
-                          image={
-                            variant.cropImgUrl ||
-                            `${baseUrl}/${detail.images[0]}`
-                          }
-                        />
-                      </>
-                    ))
-                  )
-                )}
-              </div>
-            )}
-          </div>
+    <div className="row">
+      <div className="col-lg-3 col-md-12 col-12">
+        <div className="container mt-4">
+          {filterList &&
+            Object.keys(filterList).map((filter) => (
+              <FilterCard
+                key={filter}
+                title="Product Filter"
+                onSelect={handleFilterSelection}
+                heading={filter}
+                filters={filterList[filter].map((filterName) => ({
+                  filterName,
+                }))}
+              />
+            ))}
         </div>
       </div>
-    </>
+      <div className="col-lg-9 col-md-12 col-12">
+        <div className="d-flex justify-content-between align-items-center">
+          <div className="d-flex gap-4 my-2 mt-3">
+            <button
+              onClick={() => setFilterType((prevState) => !prevState)}
+              className={`btn btn-square ${
+                filterType ? "btn-primary" : "btn-outline-primary"
+              }`}
+            >
+              <MdOutlineDashboard className="fs-4" />
+            </button>
+            <button
+              onClick={() => setFilterType((prevState) => !prevState)}
+              className={`btn btn-square ${
+                !filterType ? "btn-primary" : "btn-outline-primary"
+              }`}
+            >
+              <AiOutlineUnorderedList className="fs-4" />
+            </button>
+            <select
+              onChange={(e) => setSelectedFilter(e.target.value)}
+              className="form-select"
+              name="defaultSorting"
+              id="defaultSorting"
+              value={selectedFilter}
+            >
+              <option value="new">What's new</option>
+              <option value="discount">Better Discount</option>
+              <option value="htl">Price: High to Low</option>
+              <option value="lth">Price: Low to High</option>
+              <option value="rating">Customer Rating</option>
+            </select>
+          </div>
+        </div>
+        <div className="py-4">
+          {loading ? (
+            <p>Loading...</p>
+          ) : (
+            <div className="row">
+              {productVariantDetails.map(
+                (product) =>
+                  product.variants.length > 0 && (
+                    <ProductCardMini
+                      key={product.variants[0].details[0]._id}
+                      id={product.variants[0].details[0]._id}
+                      price={product.variants[0].details[0].price}
+                      slug={product.slug}
+                      rating={4.5}
+                      desc={product.variants[0].details[0].desc}
+                      title={product.name}
+                      image={
+                        product.variants[0].cropImgUrl ||
+                        `${baseUrl}/${product.variants[0].details[0].images[0]}`
+                      }
+                    />
+                  )
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

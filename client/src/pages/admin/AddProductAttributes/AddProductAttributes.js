@@ -3,13 +3,12 @@ import { useState, useEffect } from "react";
 import { BsCaretDown } from "react-icons/bs";
 import { GrFormClose } from "react-icons/gr";
 import { AiFillInfoCircle } from "react-icons/ai";
-import success, { debouncedShowToast ,swalError } from "../../../utils/index";
+import success, {swalError } from "../../../utils/index";
 import SearchableDropdown from "../../../components/ui/SearchableDropdown/index.js";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
 import useCategories from "../../../hook/useCategories";
-import AttributeBannerImage from "../../../assets/images/attributesImage.png";
 import Card from "../../../components/ui/Card/index.js";
 import API_WRAPPER from "../../../api/index.js";
 import { setProduct } from "../../../features/appConfig/addProductSlice.js";
@@ -28,6 +27,7 @@ function AddProductAttributes({ formData, setFormData }) {
   const [showModal,setShowModal] = useState(false);
 
   const p = useSelector((state) => state.product);
+  console.log("p ",p);
   const categories = useCategories();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -53,7 +53,9 @@ function AddProductAttributes({ formData, setFormData }) {
         setAttributesList(response?.data);
       }
     } catch (error) {
-      debouncedShowToast(error.message, "error");
+      swalError( "error",error.message,()=>{
+        setShowModal(false);
+      });
     }
   };
 
@@ -173,7 +175,7 @@ function AddProductAttributes({ formData, setFormData }) {
   }, [categoryId]);
 
   const handleDataSubmit = async () => {
-    if (!p.name || !p.vendorId || !p.categoryId) {
+    if (!p.name || !p.vendorId || !p.categoryId || !p.slug) {
       swalError("Validation Error", "Fill all required fields", () =>
         setShowModal(false)
       );
@@ -182,6 +184,11 @@ function AddProductAttributes({ formData, setFormData }) {
 
     try {
       const prodResponse = await API_WRAPPER.post("/products/add-product", p);
+      if(prodResponse.status == 200){
+       return swalError("Warning ",prodResponse.data.msg,()=>{
+          setShowModal(false);
+        })
+      }
       const productId = prodResponse.data._id;
       const attValResponse = await API_WRAPPER.post("/attribute/add-attributeValue",{attributeValues,productId});
        navigate(`${PATHS.adminAddVariant}?pid=${productId}`);

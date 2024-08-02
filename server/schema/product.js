@@ -18,6 +18,9 @@ const productSchema = new mongoose.Schema(
       type: String,
       default: "IN_STOCK",
     },
+    slug: {
+      type: String,
+    },
     approval: {
       type: String,
       default: "APPROVE",

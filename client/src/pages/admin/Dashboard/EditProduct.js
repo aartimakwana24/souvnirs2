@@ -31,6 +31,7 @@ function EditProduct() {
   const [categoryId, setCategoryId] = useState("");
   const [categoryName, setCategoryName] = useState("");
   const [productName, setProductName] = useState("");
+  const [slug, setSlug] = useState("");
   const [vendoreName, setVendoreName] = useState("");
   const [selectedAttributes, setSelectedAttributes] = useState([]);
   const [attributeValues, setAttributeValues] = useState([]);
@@ -42,7 +43,7 @@ function EditProduct() {
   const [combinations, setCombinations] = useState([]);
   const [variantData, setVariantData] = useState([]);
   const [allVariantData, setAllVariantData] = useState([]);
-  const [showModal,setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const categories = useCategories();
   const navigate = useNavigate();
@@ -50,8 +51,8 @@ function EditProduct() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
 
-   const pid = searchParams.get("pid");
-  const { id} = useParams();
+  const pid = searchParams.get("pid");
+  const { id } = useParams();
   const [query] = useSearchParams();
 
   const handleInputChange = (e) => {
@@ -203,8 +204,14 @@ function EditProduct() {
   const getProductVariants = async () => {
     try {
       const response = await API_WRAPPER.get(`/product/variants2/${id}`);
+      if (response.status == 201) {
+        swalError("Warning", response.data.msg, () => {
+          setShowModal(false);
+        });
+      }
       const productData = response.data;
       setProductName(productData.result[0].name);
+      setSlug(productData.result[0].slug);
       setVendoreName(productData.vName);
       setProduct(productData);
       setCategoryName(productData.catData.name);
@@ -225,6 +232,7 @@ function EditProduct() {
 
       setFormData({
         productName: productData.result[0].name,
+        slug: productData.result[0].slug,
         vendorName: productData.vName,
         categoryName: productData.catData.name,
         categoryId: productData.result[0].categoryId,
@@ -251,107 +259,110 @@ function EditProduct() {
     fetchAllAttributes();
   }, [categoryId]);
 
-const handleSubmitUpdate = async () => {
-  try {
-    const response = await API_WRAPPER.put(`/product/update2/${id}`, {
-      formData: { ...formData, selectedAttributes },
-    });
+  const handleSubmitUpdate = async () => {
+    try {
+      const response = await API_WRAPPER.put(`/product/update2/${id}`, {
+        formData: { ...formData, selectedAttributes },
+      });
 
-    if (response.status === 200) {
-      const allAttributesValues = response.data.allAttributesValues;
-      const allMatchingAttributesName = response.data.attributesName;
-      const productId = response.data.id;
+      if (response.status === 200) {
+        const allAttributesValues = response.data.allAttributesValues;
+        const allMatchingAttributesName = response.data.attributesName;
+        const productId = response.data.id;
 
-      const generateCombinations = (attributes, names) => {
-        const mapIdToName = names.reduce((acc, item) => {
-          acc[item._id] = item.name;
-          return acc;
-        }, {});
+        const generateCombinations = (attributes, names) => {
+          const mapIdToName = names.reduce((acc, item) => {
+            acc[item._id] = item.name;
+            return acc;
+          }, {});
 
-        const structuredAttributes = attributes.map((attr) => ({
-          name: mapIdToName[attr.paid],
-          values: attr.attvalue,
-        }));
+          const structuredAttributes = attributes.map((attr) => ({
+            name: mapIdToName[attr.paid],
+            values: attr.attvalue,
+          }));
 
-        const combinations = (prefix, attributes) => {
-          if (attributes.length === 0) return [prefix];
+          const combinations = (prefix, attributes) => {
+            if (attributes.length === 0) return [prefix];
 
-          const [first, ...rest] = attributes;
-          const result = [];
-          for (const value of first.values) {
-            result.push(
-              ...combinations([...prefix, { [first.name]: value }], rest)
-            );
-          }
-          return result;
+            const [first, ...rest] = attributes;
+            const result = [];
+            for (const value of first.values) {
+              result.push(
+                ...combinations([...prefix, { [first.name]: value }], rest)
+              );
+            }
+            return result;
+          };
+
+          return combinations([], structuredAttributes);
         };
-
-        return combinations([], structuredAttributes);
-      };
-       const allVarientsResponse = await API_WRAPPER.get(
-         `/varients/getParticular-varients/${pid}`
-       );
-      if (allVarientsResponse.status === 200) {
-        const allVarientsData = allVarientsResponse.data;
-        const newCombinations = generateCombinations(
-          allAttributesValues,
-          allMatchingAttributesName
+        const allVarientsResponse = await API_WRAPPER.get(
+          `/varients/getParticular-varients/${pid}`
         );
-        const organizedCombinations = newCombinations.map((combination) => {
-          const obj = {};
-          combination.forEach((attribute) => {
-            const key = Object.keys(attribute)[0];
-            const value = attribute[key];
-            obj[key] = value;
+        if (allVarientsResponse.status === 200) {
+          const allVarientsData = allVarientsResponse.data;
+          const newCombinations = generateCombinations(
+            allAttributesValues,
+            allMatchingAttributesName
+          );
+          const organizedCombinations = newCombinations.map((combination) => {
+            const obj = {};
+            combination.forEach((attribute) => {
+              const key = Object.keys(attribute)[0];
+              const value = attribute[key];
+              obj[key] = value;
+            });
+            return obj;
           });
-          return obj;
-        });
-        setCombinations(organizedCombinations);
+          setCombinations(organizedCombinations);
 
-        const uniqueVariants = [];
+          const uniqueVariants = [];
 
-        for (const variant of allVarientsData) {
-          const variantObj = variant.varients[0];
-          if (
-            !organizedCombinations.some((orgVariant) =>
-              isEqual(orgVariant, variantObj)
-            )
-          ) {
-            uniqueVariants.push(variantObj);
+          for (const variant of allVarientsData) {
+            const variantObj = variant.varients[0];
+            if (
+              !organizedCombinations.some((orgVariant) =>
+                isEqual(orgVariant, variantObj)
+              )
+            ) {
+              uniqueVariants.push(variantObj);
+            }
           }
-        }
 
-        for (const variant of organizedCombinations) {
-          if (
-            !allVarientsData.some((data) => isEqual(data.varients[0], variant))
-          ) {
-            uniqueVariants.push(variant);
+          for (const variant of organizedCombinations) {
+            if (
+              !allVarientsData.some((data) =>
+                isEqual(data.varients[0], variant)
+              )
+            ) {
+              uniqueVariants.push(variant);
+            }
           }
-        }
 
-        if (uniqueVariants.length === 0) {
-          console.log("No unique variants found.");
+          if (uniqueVariants.length === 0) {
+            console.log("No unique variants found.");
+          }
+          uniqueVariants.map(async (uniqueVariant) => {
+            let varientsResponse = await API_WRAPPER.post(
+              `/varients/update-varients/${productId}`,
+              uniqueVariant
+            );
+          });
         }
-        uniqueVariants.map(async(uniqueVariant)=>{
-             let varientsResponse = await API_WRAPPER.post(
-               `/varients/update-varients/${productId}`,
-               uniqueVariant
-             );
-        })
       }
+    } catch (error) {
+      console.log("Error in handleSubmitUpdate ", error);
+      swalError("Update Failed", "Failed to update the product", () =>
+        setShowModal(false)
+      );
     }
-  } catch (error) {
-    console.log("Error in handleSubmitUpdate ", error);
-    swalError("Update Failed", "Failed to update the product", () =>
-        setShowModal(false));
-  }
-};
+  };
 
-const isEqual = (obj1, obj2) => {
-  const values1 = Object.values(obj1).sort().join(",");
-  const values2 = Object.values(obj2).sort().join(",");
-  return values1 === values2;
-};
+  const isEqual = (obj1, obj2) => {
+    const values1 = Object.values(obj1).sort().join(",");
+    const values2 = Object.values(obj2).sort().join(",");
+    return values1 === values2;
+  };
 
   return (
     <>
@@ -413,6 +424,23 @@ const isEqual = (obj1, obj2) => {
                   </div>
                 </div>
               </form>
+
+              <div className="bg-light rounded border my-1 p-3">
+                <div className="form-group ">
+                  <label htmlFor="slug" className="form-label">
+                    Slug <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    onChange={(e) => handleInputChange(e)}
+                    className="form-control"
+                    type="text"
+                    name="slug"
+                    id="slug"
+                    defaultValue={slug}
+                  />
+                </div>
+              </div>
+
               <div className="row mt-4">
                 <div className="col col-lg-12 col-md-12 col-12 me-5 ms-lg-3 bg-light  p-4 rounded border my-1">
                   <motion.div
@@ -438,68 +466,7 @@ const isEqual = (obj1, obj2) => {
                                   />
                                 </div>
                               </div>
-                              {/* {categoryId && (
-                                <div className="col-lg-6 col-md-12 col-12">
-                                  <Card>
-                                    <div className="p-2">
-                                      <div className="d-lg-flex ">
-                                        <div className="col col-lg-9 col-md-3 col-12">
-                                          <p className="fw-bold">
-                                            Select Attributes: (Optional)
-                                          </p>
-                                        </div>
-                                        <div className="col col-lg-2 col-md-6 col-12">
-                                          <AiFillInfoCircle className="fs-4 my-2" />
-                                        </div>
-                                        <div className="col col-lg-2 col-md-3 col-12">
-                                          <div className="dropdown dropdown-left">
-                                            <button
-                                              className="btn btn-circle"
-                                              id="dropdownMenuButton1"
-                                              data-bs-toggle="dropdown"
-                                              aria-expanded="false"
-                                            >
-                                              <BsCaretDown className="text-primary fs-3 " />
-                                            </button>
-                                            <ul className="dropdown-menu ">
-                                              <li className="">
-                                                <select
-                                                  className="form-select"
-                                                  name=""
-                                                  onChange={(e) => {
-                                                    attributeSelection(e);
-                                                  }}
-                                                  multiple={true}
-                                                >
-                                                  {convertAttributesList(
-                                                    attributesList
-                                                  ).map((item) => (
-                                                    <option
-                                                      className="cursor-pointer border-1 shadow-lg rounded my-3 py-2 me-4 px-lg-2"
-                                                      key={item.value}
-                                                      value={item.value}
-                                                    >
-                                                      {item.label}
-                                                    </option>
-                                                  ))}
-                                                </select>
-                                              </li>
-                                            </ul>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <Tooltip
-                                      effect="solid"
-                                      id="my-tooltip"
-                                      style={{
-                                        zIndex: 9999,
-                                        background: "#4680ff36",
-                                      }}
-                                    />
-                                  </Card>
-                                </div>
-                              )} */}
+
                               {categoryId && (
                                 <div className="col-lg-6 col-md-12 col-12 border">
                                   <div className="dropdown w-100">

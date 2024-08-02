@@ -92,6 +92,38 @@ function AddCategory() {
                 />
               </div>
               <div className="col col-lg-6 col-md-12 col-12">
+                <label for="parentCategory" className="form-label">
+                  Parent Category
+                </label>
+                <select
+                  className="form-select"
+                  onChange={(e) => handleInputChange(e)}
+                  name="parentId"
+                >
+                  <option disabled selected>
+                    Select a parent category (optional)
+                  </option>
+                  {parentCategories.map((parent) => (
+                    <option key={parent._id} value={parent._id}>
+                      {parent.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col col-lg-6 col-md-12 col-12">
+                <label for="name" className="form-label">
+                  Slug
+                </label>
+                <input
+                  placeholder="Category Slug"
+                  className="form-control"
+                  onChange={handleInputChange}
+                  type="text"
+                  name="slug"
+                  id="slug"
+                />
+              </div>
+              <div className="col col-lg-6 col-md-12 col-12">
                 <input
                   placeholder="Search Attributes"
                   className="form-control mb-2"
@@ -136,26 +168,9 @@ function AddCategory() {
                   })}
                 </div>
               </div>
-              <div className="col col-lg-6 col-md-12 col-12">
-                <label for="parentCategory" className="form-label">
-                  Parent Category
-                </label>
-                <select
-                  className="form-select"
-                  onChange={(e) => handleInputChange(e)}
-                  name="parentId"
-                >
-                  <option disabled selected>
-                    Select a parent category (optional)
-                  </option>
-                  {parentCategories.map((parent) => (
-                    <option key={parent._id} value={parent._id}>
-                      {parent.name}
-                    </option>
-                  ))}
-                </select>
-              <button className="btn btn-primary w-25 mt-4">Add Category</button>
-              </div>
+                <button className="btn btn-primary w-25 mt-4">
+                  Add Category
+                </button>
             </form>
           </div>
         </div>
