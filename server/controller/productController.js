@@ -475,19 +475,6 @@ export const getProductBySlug = async (req, res) => {
         return acc;
       }, {});
 
-      console.log("productVariantDetails ", productVariantDetails);
-      if (
-        productVariantDetails.variants &&
-        productVariantDetails.variants.length > 0
-      ) {
-        console.log("Variants:");
-        productVariantDetails.variants.forEach((variant, index) => {
-          console.log(`Variant ${index + 1}:`, variant);
-        });
-      } else {
-        console.log("No variants available.");
-      }
-
       res.status(200).json({ productVariantDetails, filterList });
     } else {
       res.status(201).json({ msg: "No Product Found" });
