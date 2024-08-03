@@ -18,6 +18,7 @@ const ProductCardMini = ({
   slug,
   showBorder,
   desc,
+  data,
 }) => {
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
@@ -26,13 +27,14 @@ const ProductCardMini = ({
     return doc.body.textContent || "";
   };
 
+  console.log("data da", id);
   return (
     <motion.div
       variants={fadeInVariants}
       animate="animate"
       initial="initial"
       className={`col-lg-6 col-md-12 col-sm-12 mb-4`}
-      onClick={() => navigate(`/productInfo/${slug}`)}
+      onClick={() => navigate(`/productInfo/${slug}`, { state: { data: id } })}
     >
       <div className={`card ${showBorder ? "border" : ""} shadow-lg`}>
         <div className="row g-0 align-items-center p-3">
@@ -49,10 +51,10 @@ const ProductCardMini = ({
               <p>{stripHtmlTags(desc)}</p>
               <div className="d-flex gap-2 mt-2">
                 <button className="btn btn-sm">
-                  <AiOutlineHeart className="fs-4"/>
+                  <AiOutlineHeart className="fs-4" />
                 </button>
                 <button className="btn btn-sm">
-                  <BiShoppingBag className="fs-4"/>
+                  <BiShoppingBag className="fs-4" />
                 </button>
               </div>
             </div>

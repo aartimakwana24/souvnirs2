@@ -8,6 +8,7 @@ import {
   getProductVariants2,
   updateProduct2,
   getActiveProductsById,
+  getProductBySlug,
 } from "../controller/productController.js";
 const productRouter = express.Router();
 productRouter.post("/products/add-product",authMiddleware(["vendor", "admin", "customer"]),createProduct);
@@ -46,4 +47,5 @@ productRouter.get(
   "/product/get-all-active-ProductsById",
   getActiveProductsById
 );
+productRouter.get("/product/:slug", getProductBySlug);
 export default productRouter;

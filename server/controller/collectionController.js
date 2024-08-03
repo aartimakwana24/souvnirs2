@@ -73,6 +73,8 @@ const getVarientsDetailsQuery = async (
 export const getRawDataForFilter = async (req, res) => {
   try {
     const conditionsArray = req.body.changedTitleFilterArr;
+    console.log("req.body ",req.body);
+    console.log("conditionsArray ", conditionsArray);
     console.log(
       "req.body.changedTitleFilterArr.selectedTitle ",
       req.body.changedTitleFilterArr[0].selectedTitle

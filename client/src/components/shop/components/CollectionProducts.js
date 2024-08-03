@@ -389,7 +389,7 @@ function CollectionProducts() {
                   product.variants.length > 0 && (
                     <ProductCardMini
                       key={product.variants[0].details[0]._id}
-                      id={product.variants[0].details[0]._id}
+                      id={product.variants[0]._id}
                       price={product.variants[0].details[0].price}
                       slug={product.slug}
                       rating={4.5}
@@ -399,6 +399,7 @@ function CollectionProducts() {
                         product.variants[0].cropImgUrl ||
                         `${baseUrl}/${product.variants[0].details[0].images[0]}`
                       }
+                      data={productVariantDetails}
                     />
                   )
               )}

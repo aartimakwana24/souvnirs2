@@ -17,9 +17,11 @@ export const createProduct = async (req, res) => {
     }
 
     let attArr = attributes.map((att) => att._id);
-    const existingSlug = await productModal.findOne({slug:slug});
-    if(existingSlug){
-    return res.status(200).json({msg:"This slug is already exist enter another slug"});
+    const existingSlug = await productModal.findOne({ slug: slug });
+    if (existingSlug) {
+      return res
+        .status(200)
+        .json({ msg: "This slug is already exist enter another slug" });
     }
     const product = new productModal({
       name,
@@ -273,12 +275,12 @@ export const updateProduct2 = async (req, res) => {
     const { vendorId, name, slug, selectedAttributes, categoryId } =
       req.body.formData;
     const productId = req.params.id;
-     const existingSlug = await productModal.findOne({ slug: slug });
-     if (existingSlug) {
-       return res
-         .status(201)
-         .json({ msg: "This slug is already exist enter another slug" });
-     }
+    const existingSlug = await productModal.findOne({ slug: slug });
+    if (existingSlug) {
+      return res
+        .status(201)
+        .json({ msg: "This slug is already exist enter another slug" });
+    }
     const selectedAttIds = selectedAttributes.map((attr) => attr._id);
     const id = (await productVarients2.findById(productId)).pid.toString();
 
@@ -406,5 +408,91 @@ export const getActiveProductsById = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch products" });
     console.log("Error in getActiveProductsById ", error);
+  }
+};
+
+export const getProductBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const products = await productModal.find({ slug: slug });
+    if (products) {
+      const variants = await productVarients2.find({
+        pid: products[0]._id,
+      });
+      const variantIds = variants.map((variant) => variant._id);
+      const variantDetails = await varientsDetails.find({
+        pvid: { $in: variantIds },
+      });
+      const personalizedImages = await personalized.find({
+        pvid: { $in: variantIds },
+      });
+
+      const productVariantDetails = products.map((product) => {
+        const productVariants = variants.filter(
+          (variant) => variant.pid.toString() === product._id.toString()
+        );
+        const productVariantDetail = productVariants.map((variant) => {
+          const details = variantDetails.filter(
+            (detail) => detail.pvid.toString() === variant._id.toString()
+          );
+          const personalized = personalizedImages.find(
+            (personalized) =>
+              personalized.pvid.toString() === variant._id.toString()
+          );
+          return {
+            ...variant._doc,
+            details,
+            cropImgUrl: personalized ? personalized.cropImgUrl : null,
+          };
+        });
+        return {
+          ...product._doc,
+          variants: productVariantDetail,
+        };
+      });
+
+      const attributeIds = products.flatMap((product) => product.selectedAtt);
+      const attributes = await attributeModal.find({
+        _id: { $in: attributeIds },
+      });
+      const attributeTypeIds = attributes.map((attribute) => attribute._id);
+      const attributeTypes = await productAttributeType.find({
+        paid: { $in: attributeTypeIds },
+      });
+      const filterList = attributes.reduce((acc, attribute) => {
+        const attributeName = attribute.name;
+        if (!acc[attributeName]) {
+          acc[attributeName] = [];
+        }
+        const attributeType = attributeTypes.find(
+          (type) => type.paid.toString() === attribute._id.toString()
+        );
+        if (attributeType) {
+          acc[attributeName] = [
+            ...new Set([...acc[attributeName], ...attributeType.attvalue]),
+          ];
+        }
+        return acc;
+      }, {});
+
+      console.log("productVariantDetails ", productVariantDetails);
+      if (
+        productVariantDetails.variants &&
+        productVariantDetails.variants.length > 0
+      ) {
+        console.log("Variants:");
+        productVariantDetails.variants.forEach((variant, index) => {
+          console.log(`Variant ${index + 1}:`, variant);
+        });
+      } else {
+        console.log("No variants available.");
+      }
+
+      res.status(200).json({ productVariantDetails, filterList });
+    } else {
+      res.status(201).json({ msg: "No Product Found" });
+    }
+  } catch (error) {
+    console.log("Error in getProductBySlug", error);
   }
 };
