@@ -332,7 +332,7 @@ export const updateProduct2 = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-// --------
+
 export const getActiveProductsById = async (req, res) => {
   try {
     const productIds = req.query.ids;
@@ -384,10 +384,13 @@ export const getActiveProductsById = async (req, res) => {
     });
 
     const attributeTypeIds = attributes.map((attribute) => attribute._id);
-    const attributeTypes = await productAttributeType.find({
-      paid: { $in: attributeTypeIds },
-    });
 
+    const attributeTypes = await productAttributeType.find({
+      $and: [
+        { paid: { $in: attributeTypeIds } },
+        { pid: { $in: productObjectIds } },
+      ],
+    });
     const filterList = attributes.reduce((acc, attribute) => {
       const attributeName = attribute.name;
       if (!acc[attributeName]) {
@@ -457,7 +460,7 @@ export const getProductBySlug = async (req, res) => {
       });
       const attributeTypeIds = attributes.map((attribute) => attribute._id);
       const attributeTypes = await productAttributeType.find({
-        paid: { $in: attributeTypeIds },
+        $and: [{ paid: { $in: attributeTypeIds } }, { pid: products[0]._id }],
       });
       const filterList = attributes.reduce((acc, attribute) => {
         const attributeName = attribute.name;

@@ -73,13 +73,6 @@ const getVarientsDetailsQuery = async (
 export const getRawDataForFilter = async (req, res) => {
   try {
     const conditionsArray = req.body.changedTitleFilterArr;
-    console.log("req.body ",req.body);
-    console.log("conditionsArray ", conditionsArray);
-    console.log(
-      "req.body.changedTitleFilterArr.selectedTitle ",
-      req.body.changedTitleFilterArr[0].selectedTitle
-    );
-
     const radioSelection = req.body.radioSelection;
     let filteredProducts = [];
     let query;
@@ -100,18 +93,15 @@ export const getRawDataForFilter = async (req, res) => {
         actualConditionValue = await conditionValueModal.find({
           _id: conditionValue,
         });
-        console.log("actualConditionValue in if ", actualConditionValue);
       } else {
         actualConditionValue = await conditionValueModal.find({
           conditionValue: conditionValue,
         });
-        console.log("actualConditionValue in else ", actualConditionValue);
       }
 
       if (actualConditionValue) {
         condition.conditionValue = actualConditionValue[0].conditionValue;
         const operator = getOperator(condition.conditionValue);
-        console.log("operator is ", operator);
         switch (selectedTitle) {
           case "category":
             const categories = await categoriesModal.find({
@@ -127,7 +117,6 @@ export const getRawDataForFilter = async (req, res) => {
             }
             break;
           case "Vendor":
-            console.log("operator in vendors ", operator);
             const vendors = await vendorModal.find({
               $or: [
                 { firstName: { $regex: inputValue, $options: "i" } },
@@ -176,7 +165,6 @@ export const getRawDataForFilter = async (req, res) => {
             addConditionToQuery(query, tagsQuery, radioSelection);
             break;
           default:
-            console.log("Defalut matched");
             const varientsQuery = await getVarientsDetailsQuery(
               condition,
               selectedTitle,
