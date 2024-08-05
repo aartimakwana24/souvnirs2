@@ -188,7 +188,6 @@ export const updateParentCategory = async (req, res) => {
 //   }
 // };
 
-
 export const getCategoryBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
@@ -293,6 +292,7 @@ export const getCategoryBySlug = async (req, res) => {
         return {
           _id: product._id,
           name: product.name,
+          slug: product.slug,
           vendorId: product.vendorId,
           categoryId: product.categoryId,
           stockStatus: product.stockStatus,
@@ -313,10 +313,15 @@ export const getCategoryBySlug = async (req, res) => {
       });
 
       const attributeTypeIds = attributes.map((attribute) => attribute._id);
+      // const attributeTypes = await productAttributeType.find({
+      //   paid: { $in: attributeTypeIds },
+      // });
       const attributeTypes = await productAttributeType.find({
-        paid: { $in: attributeTypeIds },
+        $and: [
+          { paid: { $in: attributeTypeIds } },
+          { pid: { $in: productObjectIds } },
+        ],
       });
-
       const filterList = attributes.reduce((acc, attribute) => {
         const attributeName = attribute.name;
         if (!acc[attributeName]) {

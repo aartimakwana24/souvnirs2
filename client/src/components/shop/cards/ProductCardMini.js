@@ -26,8 +26,6 @@ const ProductCardMini = ({
     const doc = new DOMParser().parseFromString(html, "text/html");
     return doc.body.textContent || "";
   };
-
-  console.log("data da", id);
   return (
     <motion.div
       variants={fadeInVariants}

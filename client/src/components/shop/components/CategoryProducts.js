@@ -21,24 +21,60 @@ function CategoryProducts() {
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(2);
   const [selctedFilter, setSelctedFilter] = useState("new");
-  const [showModal , setShowModal] =useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const { slug } = useParams();
   const getProducts = async () => {
     setLoading(true);
     const response = await API_WRAPPER.get(`/category/${slug}`);
-    if(response.status == 200){
+    if (response.status == 200) {
       const data = response.data;
-      console.log("Response ", data);
-     setProductVariantDetails(data.productVariantDetails);
-     setFilterList(data.filterList);
+      const filterMap = filters.reduce((acc, filter) => {
+        acc[filter.key] = filter.values;
+        return acc;
+      }, {});
 
-    }else{
-      swalError("Warning ","No Category found",()=>{
+       function isVariantMatching(variant, filterMap) {
+         return Object.keys(filterMap).every((key) => {
+           const filterValues = filterMap[key];
+
+           if (filterValues.length === 0) {
+             return true;
+           }
+
+           const variantValue = (variant[key] || "").toLowerCase();
+           const normalizedFilterValues = filterValues.map((value) =>
+             value.toLowerCase()
+           );
+
+           return normalizedFilterValues.includes(variantValue);
+         });
+       }
+
+       const filteredProducts = data.productVariantDetails
+         .map((product) => {
+           const matchingVariants = product.variants.filter((variantObj) =>
+             variantObj.varients.some((variant) =>
+               isVariantMatching(variant, filterMap)
+             )
+           );
+
+           return {
+             ...product,
+             variants: matchingVariants,
+           };
+         })
+         .filter((product) => product.variants.length > 0);
+
+       setProductVariantDetails(filteredProducts);
+       setFilterList(response.data.filterList);
+
+    } else {
+      swalError("Warning ", "No Category found", () => {
         setShowModal(false);
       });
     }
-  
+
     setLoading(false);
   };
 
@@ -49,24 +85,22 @@ function CategoryProducts() {
   }, [slug, filters, inputRangeValue, selctedFilter, page]);
 
   const handleFilterSelection = (filterData) => {
-    const filterKey = filterData.key;
-    const filterValues = filterData.values;
-    const existingFilterIndex = filters.findIndex(
-      (filter) => filter.key === filterKey
-    );
+    const { key, values } = filterData;
+    setFilters((prevFilters) => {
+      const existingFilterIndex = prevFilters.findIndex(
+        (filter) => filter.key === key
+      );
 
-    if (existingFilterIndex !== -1) {
-      const updatedFilters = [...filters];
-      updatedFilters[existingFilterIndex].values = filterValues;
-      setFilters(updatedFilters);
-    } else {
-      const newFilter = {
-        key: filterKey,
-        values: filterValues,
-      };
-      setFilters((prevFilters) => [...prevFilters, newFilter]);
-    }
+      if (existingFilterIndex !== -1) {
+        const updatedFilters = [...prevFilters];
+        updatedFilters[existingFilterIndex].values = values;
+        return updatedFilters;
+      } else {
+        return [...prevFilters, { key, values }];
+      }
+    });
   };
+
   return (
     <>
       <div className="row">
@@ -125,28 +159,27 @@ function CategoryProducts() {
               <p>Loading...</p>
             ) : (
               <>
-                {console.log("productVariantDetails ", productVariantDetails)}
                 <div className="row">
-                  {productVariantDetails.map((product) =>
-                    product.variants.flatMap((variant) =>
-                      variant.details.map((detail) => (
+                  {productVariantDetails.map(
+                    (product) =>
+                      product.variants.length > 0 && (
                         <>
                           <ProductCardMini
-                            key={detail._id}
-                            id={detail._id}
-                            price={detail.price}
+                            key={product.variants[0].details[0]._id}
+                            id={product.variants[0]._id}
+                            price={product.variants[0].details[0].price}
                             slug={product.slug}
                             rating={4.5}
-                            desc={detail.desc}
+                            desc={product.variants[0].details[0].desc}
                             title={product.name}
                             image={
-                              variant.cropImgUrl ||
-                              `${baseUrl}/${detail.images[0]}`
+                              product.variants[0].cropImgUrl ||
+                              `${baseUrl}/${product.variants[0].details[0].images[0]}`
                             }
+                            data={productVariantDetails}
                           />
                         </>
-                      ))
-                    )
+                      )
                   )}
                 </div>
               </>
