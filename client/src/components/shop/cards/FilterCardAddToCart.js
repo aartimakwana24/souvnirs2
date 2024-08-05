@@ -13,12 +13,14 @@ const FilterCardAddToCart = ({ title, heading, filters, onSelect }) => {
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
+  if (selectedFilters.length > 0) {
     onSelect({ key: heading, values: selectedFilters });
-  }, [selectedFilters]);
+  }
+}, [selectedFilters]);
+
 
   return (
-    // <Card>
       <div className="">
         <div className="d-flex justify-content-between align-items-center ">
           <h6 className="text-info fw-bold">
@@ -34,7 +36,6 @@ const FilterCardAddToCart = ({ title, heading, filters, onSelect }) => {
             Clear all
           </p>
         </div>
-        {/* <div className="mt-4"></div> */}
 
         <div className=" overflow-auto" style={{ maxHeight: "300px" }}>
           {filters.map((filter, index) => (
@@ -59,7 +60,6 @@ const FilterCardAddToCart = ({ title, heading, filters, onSelect }) => {
           ))}
         </div>
       </div>
-    // </Card>
   );
 };
 
