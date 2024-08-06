@@ -267,16 +267,16 @@
 //               <p>Ongoing Offers!</p>
 //             </center>
 //             <div>
-//               <div class="card mb-3" style={{ maxWidth: "540px" }}>
-//                 <div class="row g-0">
-//                   <div class="col-md-4 bg-primary">
+//               <div className="card mb-3" style={{ maxWidth: "540px" }}>
+//                 <div className="row g-0">
+//                   <div className="col-md-4 bg-primary">
 //                     <center className="my-5">
 //                       <b>Flate Rs. 250 off</b>
 //                     </center>
 //                   </div>
-//                   <div class="col-md-8">
-//                     <div class="card-body">
-//                       <p class="card-text">
+//                   <div className="col-md-8">
+//                     <div className="card-body">
+//                       <p className="card-text">
 //                         Flat $250 off on minimum merchendise value $999! Use
 //                         codeFEST250
 //                       </p>
@@ -284,16 +284,16 @@
 //                   </div>
 //                 </div>
 //               </div>
-//               <div class="card mb-3" style={{ maxWidth: "540px" }}>
-//                 <div class="row g-0">
-//                   <div class="col-md-4 bg-primary">
+//               <div className="card mb-3" style={{ maxWidth: "540px" }}>
+//                 <div className="row g-0">
+//                   <div className="col-md-4 bg-primary">
 //                     <center className="my-5">
 //                       <b>Flate Rs. 250 off</b>
 //                     </center>
 //                   </div>
-//                   <div class="col-md-8">
-//                     <div class="card-body">
-//                       <p class="card-text">
+//                   <div className="col-md-8">
+//                     <div className="card-body">
+//                       <p className="card-text">
 //                         Flat $250 off on minimum merchendise value $999! Use
 //                         codeFEST250
 //                       </p>
@@ -588,16 +588,16 @@
 //               <p>Ongoing Offers!</p>
 //             </center>
 //             <div>
-//               <div class="card mb-3" style={{ maxWidth: "540px" }}>
-//                 <div class="row g-0">
-//                   <div class="col-md-4 bg-primary">
+//               <div className="card mb-3" style={{ maxWidth: "540px" }}>
+//                 <div className="row g-0">
+//                   <div className="col-md-4 bg-primary">
 //                     <center className="my-5">
 //                       <b>Flate Rs. 250 off</b>
 //                     </center>
 //                   </div>
-//                   <div class="col-md-8">
-//                     <div class="card-body">
-//                       <p class="card-text">
+//                   <div className="col-md-8">
+//                     <div className="card-body">
+//                       <p className="card-text">
 //                         Flat $250 off on minimum merchendise value $999! Use
 //                         codeFEST250
 //                       </p>
@@ -605,16 +605,16 @@
 //                   </div>
 //                 </div>
 //               </div>
-//               <div class="card mb-3" style={{ maxWidth: "540px" }}>
-//                 <div class="row g-0">
-//                   <div class="col-md-4 bg-primary">
+//               <div className="card mb-3" style={{ maxWidth: "540px" }}>
+//                 <div className="row g-0">
+//                   <div className="col-md-4 bg-primary">
 //                     <center className="my-5">
 //                       <b>Flate Rs. 250 off</b>
 //                     </center>
 //                   </div>
-//                   <div class="col-md-8">
-//                     <div class="card-body">
-//                       <p class="card-text">
+//                   <div className="col-md-8">
+//                     <div className="card-body">
+//                       <p className="card-text">
 //                         Flat $250 off on minimum merchendise value $999! Use
 //                         codeFEST250
 //                       </p>
@@ -652,6 +652,7 @@ function ProductInfo() {
   const [filters, setFilters] = useState({});
   const [filterList, setFilterList] = useState([]);
   const [displayedPrice, setDisplayedPrice] = useState(0);
+  const [defaultSelections, setDefaultSelections] = useState({});
   const [currency, setCurrency] = useState("$");
   const [quantity, setQuantity] = useState(1);
   const vid = location.state?.data;
@@ -675,15 +676,21 @@ function ProductInfo() {
 
   const updatePriceBasedOnQuantity = (quantity) => {
     const priceData = productVarients?.details?.[0]?.data || [];
+    let currency = "$";
     let price = productVarients?.details?.[0]?.price || 0;
-              console.log("priceData ", priceData);
     for (let i = 0; i < priceData.length; i++) {
-      const { minQuantity, price: variantPrice, currency } = priceData[i];
+      const {
+        minQuantity,
+        price: variantPrice,
+        currency: variantCurrency,
+      } = priceData[i];
       if (quantity >= minQuantity) {
         price = variantPrice;
+        currency = variantCurrency;
       }
     }
 
+    setCurrency(currency);
     setDisplayedPrice(price);
   };
 
@@ -750,6 +757,15 @@ function ProductInfo() {
           const images = matchingVariant.details[0]?.images || [];
           setImagesList(images);
           setSelectedImage(images[0]);
+
+          const defaultSelections = {};
+          if (matchingVariant.varients.length > 0) {
+            matchingVariant.varients[0] &&
+              Object.keys(matchingVariant.varients[0]).forEach((key) => {
+                defaultSelections[key] = matchingVariant.varients[0][key];
+              });
+          }
+          setDefaultSelections(defaultSelections);
         } else {
           swalError("Warning", "Variant not found", () => {
             setShowModal(false);
@@ -803,7 +819,10 @@ function ProductInfo() {
 
             <div className="col-lg-6 col-md-12 col-12">
               <h1 className="display-5">{product?.[0]?.name}</h1>
-              <span className="fs-2">{currency}{displayedPrice}</span>
+              <span className="fs-2">
+                {currency}
+                {displayedPrice}
+              </span>
               <div className="">
                 <Ratings rating={3} />
                 <p>10 (Reviews)</p>
@@ -828,23 +847,30 @@ function ProductInfo() {
                 ></i>
                 Add to Cart
               </button>
-              <button className="btn btn-outline-primary w-100">
+              <button
+                className="btn btn-outline-primary w-100"
+                data-bs-toggle="modal"
+                data-bs-target="#getQ"
+              >
                 Get Quote
               </button>
+
               <div className="mt-2">
                 {filterList &&
-                  Object.keys(filterList).map((filter) => (
-                    <FilterCardAddToCart
-                      key={filter}
-                      title="Product Filter"
-                      onSelect={handleFilterSelection}
-                      heading={filter}
-                      filters={filterList[filter].map((filterName) => ({
-                        filterName,
-                      }))}
-                      defaultSelection={productVarients[filter] || ""}
-                    />
-                  ))}
+                  Object.keys(filterList).map((filter) => {
+                    return (
+                      <FilterCardAddToCart
+                        key={filter}
+                        title="Product Filter"
+                        onSelect={handleFilterSelection}
+                        heading={filter}
+                        filters={filterList[filter].map((filterName) => ({
+                          filterName,
+                        }))}
+                        defaultSelection={defaultSelections[filter] || ""}
+                      />
+                    );
+                  })}
               </div>
             </div>
           </div>
@@ -895,6 +921,58 @@ function ProductInfo() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div
+        className="modal fade"
+        id="getQ"
+        tabindex="-1"
+        aria-labelledby="exampleModalLabel"
+        aria-hidden="true"
+      >
+        <div className="modal-dialog">
+          <form>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h1 className="modal-title fs-5" id="exampleModalLabel">
+                  Get Quote
+                </h1>
+                <button
+                  type="button"
+                  className="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label for="exampleInputEmail1" className="form-label">
+                    Quantity
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="quantity"
+                    name="quantity"
+                    min="1"
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="submit"
+                  className="btn btn-secondary"
+                  data-bs-dismiss="modal"
+                >
+                  Close
+                </button>
+                <button type="button" className="btn btn-primary">
+                  Save changes
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
       </div>
     </div>

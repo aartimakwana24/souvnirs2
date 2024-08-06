@@ -61,6 +61,8 @@ export const getAllCategories = async (req, res) => {
 
 export const updateCategory = async (req, res) => {
   try {
+     const categoryId = req.params.id;
+     console.log("categoryId ", categoryId);
     const existingCategory = await categoriesModal.findById(req.params.id);
     if (!existingCategory) {
       return res.status(404).json({ message: "Category not found" });
@@ -68,12 +70,18 @@ export const updateCategory = async (req, res) => {
 
     const { attributes } = req.body;
     const { name, hsn_code, status, type, parentId, slug } = req.body;
-    const existingSlug = await categoriesModal.findOne(slug);
-    if (existingSlug) {
-      return res.status(400).json({
-        msg: "This slig is already exist please enter another slug",
-      });
+    if (slug && slug !== existingCategory.slug) {
+       const existingSlug = await categoriesModal.findOne({
+         slug:slug,
+         _id: { $ne: categoryId },
+       });
+      if (existingSlug) {
+        return res.status(400).json({
+          msg: "This slug already exists. Please enter another slug.",
+        });
+      }
     }
+
     const updatedAttributes = existingCategory.attributes.filter((attr) =>
       attributes.includes(attr.toString())
     );
@@ -94,7 +102,7 @@ export const updateCategory = async (req, res) => {
     const updatedCategory = await existingCategory.save();
     res.status(200).json(updatedCategory);
   } catch (error) {
-    console.log("categoryController.js", error);
+    console.log("Error in Edit categoryController", error);
     res.status(400).json({ error: error.message });
   }
 };

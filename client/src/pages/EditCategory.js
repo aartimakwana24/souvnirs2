@@ -106,15 +106,16 @@ function EditCategory() {
         ...formData,
         attributes: selectedAttributes.map((attribute) => attribute._id),
       };
-      if (response.data.msg) {
-        swalError("Warning", response.data.msg, () => {
-          setShowModal(false);
-        });
-      }
+    
       const response = await API_WRAPPER.put(
         `/category/update-category/${params.id}`,
         data
       );
+        if (response.data.msg) {
+          swalError("Warning", response.data.msg, () => {
+            setShowModal(false);
+          });
+        }
       navigate(PATHS.adminCategories);
       success("Edit Category", "Category Edited Sccesfully!");
     } catch (error) {

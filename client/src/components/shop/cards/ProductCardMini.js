@@ -34,7 +34,10 @@ const ProductCardMini = ({
       className={`col-lg-6 col-md-12 col-sm-12 mb-4`}
       onClick={() => navigate(`/productInfo/${slug}`, { state: { data: id } })}
     >
-      <div className={`card ${showBorder ? "border" : ""} shadow-lg`}>
+      <div
+        className={`card ${showBorder ? "border" : ""} shadow-lg`}
+        style={{ cursor: "pointer" }}
+      >
         <div className="row g-0 align-items-center p-3">
           <div className="col-4">
             <img className="img-fluid" src={image} alt={title} />
