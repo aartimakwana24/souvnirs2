@@ -1,5 +1,4 @@
 // import React, { useState, useEffect } from "react";
-
 // function FilterCardAddToCart({
 //   title,
 //   onSelect,
@@ -49,7 +48,6 @@
 
 // export default FilterCardAddToCart;
 
-
 import React, { useState, useEffect } from "react";
 
 function FilterCardAddToCart({
@@ -69,14 +67,13 @@ function FilterCardAddToCart({
   }, [defaultSelection, heading, onSelect, selectedFilter]);
 
   const handleSelectionChange = (filterName) => {
-    console.log("filterName", filterName);
     setSelectedFilter([filterName]);
     onSelect({ key: heading, values: [filterName] });
   };
 
   return (
     <div className="filter-card">
-      <h6 className="text-info fw-bold">{heading && `${heading}`}</h6>
+      <h6 className="text-info fw-bold">{heading}</h6>
       <div className="filter-options">
         {filters.map((filter, index) => (
           <div key={index} className="filter-option">
@@ -88,6 +85,7 @@ function FilterCardAddToCart({
               value={filter.filterName}
               checked={selectedFilter.includes(filter.filterName)}
               onChange={() => handleSelectionChange(filter.filterName)}
+              disabled={filter.disabled}
             />
             <label htmlFor={`filter-${heading}-${index}`}>
               {filter.filterName}
