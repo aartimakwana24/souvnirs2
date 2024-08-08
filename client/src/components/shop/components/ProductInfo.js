@@ -1,52 +1,64 @@
 // import React, { useEffect, useState } from "react";
 // import { Link, useLocation, useParams } from "react-router-dom";
-// import parse from "html-react-parser";
 // import InnerImageZoom from "react-inner-image-zoom";
 // import "react-inner-image-zoom/lib/InnerImageZoom/styles.min.css";
-// import watch from "../../../assets/images/watch.jpg";
-// import { BiArrowBack } from "react-icons/bi";
 // import API_WRAPPER, { baseUrl } from "../../../api";
 // import success, { swalError } from "../../../utils";
 // import Ratings from "./Ratings";
 // import FilterCardAddToCart from "../cards/FilterCardAddToCart";
 
 // function ProductInfo() {
-//   const [selectedImage, setSelectedImage] = useState(watch);
+//   const [selectedImage, setSelectedImage] = useState(null);
 //   const [imagesList, setImagesList] = useState([]);
-//   const [allImagesList, setAllImagesList] = useState([]);
 //   const [showModal, setShowModal] = useState(false);
 //   const location = useLocation();
 //   const [product, setProduct] = useState([]);
 //   const [productVarients, setProductVarients] = useState([]);
 //   const [AllProductVarients, setAllProductVarients] = useState([]);
-//   const [filterList, setFilterList] = useState([]);
-//   const [displayedPrice, setDisplayedPrice] = useState(5000);
 //   const [filters, setFilters] = useState({});
-//   const [quantity, setQuantity] = useState(50);
+//   const [filterList, setFilterList] = useState([]);
+//   const [displayedPrice, setDisplayedPrice] = useState(0);
+//   const [defaultSelections, setDefaultSelections] = useState({});
+//   const [currency, setCurrency] = useState("$");
+//   const [quantity, setQuantity] = useState(1);
 //   const vid = location.state?.data;
 //   const { slug } = useParams();
 
-//   // const updatePriceBasedOnQuantity = (quantity) => {
-//   //   return product.price * (quantity / 50);
-//   // };
+//   useEffect(() => {
+//     fetchProductData();
+//   }, [slug]);
 
-//    const updatePriceBasedOnQuantity = (quantity) => {
-//      const priceData = productVarients?.details?.[0]?.data || [];
+//   useEffect(() => {
+//     if (productVarients?.details?.[0]?.price) {
+//       setDisplayedPrice(productVarients.details[0].price);
+//     }
+//   }, [productVarients]);
 
-//      // Default price
-//      let price =
-//        productVarients?.details?.[0]?.price ||
-//        productVarients?.details?.[0]?.price;
+//   const handleQuantityChange = (e) => {
+//     const newQuantity = parseInt(e.target.value, 10);
+//     setQuantity(newQuantity);
+//     updatePriceBasedOnQuantity(newQuantity);
+//   };
 
-//      for (let i = 0; i < priceData.length; i++) {
-//        const { minQuantity, price: variantPrice } = priceData[i];
-//        if (quantity >= minQuantity) {
-//          price = variantPrice;
-//        }
-//      }
+//   const updatePriceBasedOnQuantity = (quantity) => {
+//     const priceData = productVarients?.details?.[0]?.data || [];
+//     let currency = "$";
+//     let price = productVarients?.details?.[0]?.price || 0;
+//     for (let i = 0; i < priceData.length; i++) {
+//       const {
+//         minQuantity,
+//         price: variantPrice,
+//         currency: variantCurrency,
+//       } = priceData[i];
+//       if (quantity >= minQuantity) {
+//         price = variantPrice;
+//         currency = variantCurrency;
+//       }
+//     }
 
-//      setDisplayedPrice(price);
-//    };
+//     setCurrency(currency);
+//     setDisplayedPrice(price);
+//   };
 
 //   const handleFilterSelection = (filterData) => {
 //     const { key, values } = filterData;
@@ -101,9 +113,6 @@
 //         setProduct(data.productVariantDetails);
 //         setFilterList(data.filterList);
 
-//         const allImages = extractImages(data);
-//         setAllImagesList(allImages);
-
 //         setAllProductVarients(data.productVariantDetails);
 //         const matchingVariant = data.productVariantDetails
 //           .flatMap((product) => product.variants)
@@ -114,6 +123,15 @@
 //           const images = matchingVariant.details[0]?.images || [];
 //           setImagesList(images);
 //           setSelectedImage(images[0]);
+
+//           const defaultSelections = {};
+//           if (matchingVariant.varients.length > 0) {
+//             matchingVariant.varients[0] &&
+//               Object.keys(matchingVariant.varients[0]).forEach((key) => {
+//                 defaultSelections[key] = matchingVariant.varients[0][key];
+//               });
+//           }
+//           setDefaultSelections(defaultSelections);
 //         } else {
 //           swalError("Warning", "Variant not found", () => {
 //             setShowModal(false);
@@ -129,123 +147,84 @@
 //     }
 //   };
 
-//   const extractImages = (data) => {
-//     if (!Array.isArray(data.productVariantDetails)) {
-//       console.error(
-//         "productVariantDetails is not an array:",
-//         data.productVariantDetails
-//       );
-//       return [];
-//     }
-
-//     const allImagesList = data.productVariantDetails.flatMap((variant) => {
-//       if (!Array.isArray(variant.variants)) {
-//         console.error("variants is not an array for variant:", variant);
-//         return [];
-//       }
-
-//       return variant.variants.flatMap((variantItem) => {
-//         if (!Array.isArray(variantItem.details)) {
-//           console.error(
-//             "details is not an array for variantItem:",
-//             variantItem
-//           );
-//           return [];
-//         }
-
-//         return variantItem.details.flatMap((detail) => {
-//           if (!Array.isArray(detail.images)) {
-//             console.error("images is not an array for detail:", detail);
-//             return [];
-//           }
-//           return detail.images.filter((image) => image);
-//         });
-//       });
-//     });
-
-//     return allImagesList;
-//   };
-
-//   useEffect(() => {
-//     fetchProductData();
-//   }, [slug]);
-
 //   return (
-//     <>
-//       <div className="container mt-4">
-//         <Link to="/" className="btn btn-outline-secondary mb-4">
-//           <BiArrowBack className="me-2" />
-//           Back
-//         </Link>
+//     <div className="container mt-4">
+//       <Link to="/" className="btn btn-outline-secondary mb-4">
+//         Back
+//       </Link>
 
-//         <div className="row" style={{ backgroundColor: "rgb(255, 253, 246)" }}>
-//           <div className="col-lg-9 col-md-9 col-12">
-//             <div className="row">
-//               <div className="col-lg-6 col-md-12 col-12">
-//                 <div className="card my-3" style={{ width: "18rem;" }}>
-//                   <InnerImageZoom
-//                     className="rounded-3 d-flex justify-content-center my-2"
-//                     src={`${baseUrl}/${selectedImage}`}
-//                     zoomType="hover"
-//                     zoomScale={1.5}
-//                   />
-//                   <div className="card-body mt-2">
-//                     {imagesList.map((image, index) => (
-//                       <img
-//                         key={index}
-//                         src={`${baseUrl}/${image}`}
-//                         alt={`Thumbnail ${index + 1}`}
-//                         className="img-thumbnail cursor-pointer mx-2 bg-light"
-//                         style={{
-//                           width: "100px",
-//                           height: "100px",
-//                           objectFit: "cover",
-//                         }}
-//                         onClick={() => setSelectedImage(image)}
-//                       />
-//                     ))}
-//                   </div>
+//       <div className="row" style={{ backgroundColor: "rgb(255, 253, 246)" }}>
+//         <div className="col-lg-9 col-md-9 col-12">
+//           <div className="row">
+//             <div className="col-lg-6 col-md-12 col-12">
+//               <div className="card my-3" style={{ width: "18rem;" }}>
+//                 <InnerImageZoom
+//                   className="rounded-3 d-flex justify-content-center my-2"
+//                   src={`${baseUrl}/${selectedImage}`}
+//                   zoomType="hover"
+//                   zoomScale={1.5}
+//                 />
+//                 <div className="card-body mt-2">
+//                   {imagesList.map((image, index) => (
+//                     <img
+//                       key={index}
+//                       src={`${baseUrl}/${image}`}
+//                       alt={`Thumbnail ${index + 1}`}
+//                       className="img-thumbnail cursor-pointer mx-2 bg-light"
+//                       style={{
+//                         width: "100px",
+//                         height: "100px",
+//                         objectFit: "cover",
+//                       }}
+//                       onClick={() => setSelectedImage(image)}
+//                     />
+//                   ))}
 //                 </div>
 //               </div>
+//             </div>
 
-//               <div className="col-lg-6 col-md-12 col-12">
-//                 <h1 className="display-5">{product?.[0]?.name}</h1>
-//                 {console.log("productVarients ta tang ", productVarients)}
-//                 <span className="fs-2">
-//                   ${productVarients?.details?.[0]?.price}
-//                 </span>
-//                 <div className="">
-//                   <Ratings rating={3} />
-//                   {/* <p>({product.reviewsCount} Reviews)</p> */}
-//                   <p>10 (Reviews)</p>
-//                 </div>
-//                 <div className="mb-1">
-//                   <label htmlFor="quantity" className="form-label">
-//                     Quantity
-//                   </label>
-//                   <input
-//                     type="number"
-//                     className="form-control"
-//                     id="quantity"
-//                     value={quantity}
-//                     min="50"
-//                     onChange={(e) => setQuantity(parseInt(e.target.value))}
-//                   />
-//                 </div>
-//                 <button className="btn btn-primary w-100 mb-2">
-//                   <i
-//                     className="fa fa-shopping-cart"
-//                     style={{ fontSize: "20px" }}
-//                   ></i>
-//                   Add to Cart
-//                 </button>
-//                 <button className="btn btn-outline-primary w-100">
-//                   Get Quote
-//                 </button>
+//             <div className="col-lg-6 col-md-12 col-12">
+//               <h1 className="display-5">{product?.[0]?.name}</h1>
+//               <span className="fs-2">
+//                 {currency}
+//                 {displayedPrice}
+//               </span>
+//               <div className="">
+//                 <Ratings rating={3} />
+//                 <p>10 (Reviews)</p>
+//               </div>
+//               <div className="mb-1">
+//                 <label htmlFor="quantity" className="form-label">
+//                   Quantity
+//                 </label>
+//                 <input
+//                   type="number"
+//                   className="form-control"
+//                   id="quantity"
+//                   value={quantity}
+//                   min="1"
+//                   onChange={handleQuantityChange}
+//                 />
+//               </div>
+//               <button className="btn btn-primary w-100 mb-2">
+//                 <i
+//                   className="fa fa-shopping-cart"
+//                   style={{ fontSize: "20px" }}
+//                 ></i>
+//                 Add to Cart
+//               </button>
+//               <button
+//                 className="btn btn-outline-primary w-100"
+//                 data-bs-toggle="modal"
+//                 data-bs-target="#getQ"
+//               >
+//                 Get Quote
+//               </button>
 
-//                 <div className="mt-2">
-//                   {filterList &&
-//                     Object.keys(filterList).map((filter) => (
+//               <div className="mt-2">
+//                 {filterList &&
+//                   Object.keys(filterList).map((filter) => {
+//                     return (
 //                       <FilterCardAddToCart
 //                         key={filter}
 //                         title="Product Filter"
@@ -254,50 +233,55 @@
 //                         filters={filterList[filter].map((filterName) => ({
 //                           filterName,
 //                         }))}
-//                         defaultSelection={productVarients[filter] || ""}
+//                         defaultSelection={defaultSelections[filter] || ""}
 //                       />
-//                     ))}
-//                 </div>
+//                     );
+//                   })}
 //               </div>
 //             </div>
 //           </div>
+//         </div>
 
-//           <div className="col-lg-3 col-md-3 col-12">
-//             <center>
-//               <p>Ongoing Offers!</p>
-//             </center>
-//             <div>
-//               <div className="card mb-3" style={{ maxWidth: "540px" }}>
-//                 <div className="row g-0">
-//                   <div className="col-md-4 bg-primary">
-//                     <center className="my-5">
-//                       <b>Flate Rs. 250 off</b>
-//                     </center>
-//                   </div>
-//                   <div className="col-md-8">
-//                     <div className="card-body">
-//                       <p className="card-text">
-//                         Flat $250 off on minimum merchendise value $999! Use
-//                         codeFEST250
-//                       </p>
-//                     </div>
+//         <div className="col-lg-3 col-md-3 col-12">
+//           <center>
+//             <p>Ongoing Offers!</p>
+//           </center>
+//           <div>
+//             <div className="card mb-3" style={{ maxWidth: "540px" }}>
+//               <div className="row g-0">
+//                 <div className="col-md-4 bg-primary">
+//                   <center className="my-5">
+//                     <b>Flat Rs. 250 off</b>
+//                   </center>
+//                 </div>
+//                 <div className="col-md-8">
+//                   <div className="card-body">
+//                     <p className="card-text">
+//                       Flat $250 off on minimum merch purchase of Rs. 1000
+//                     </p>
+//                     <p className="card-text">
+//                       <small className="text-muted">31 days remaining</small>
+//                     </p>
 //                   </div>
 //                 </div>
 //               </div>
-//               <div className="card mb-3" style={{ maxWidth: "540px" }}>
-//                 <div className="row g-0">
-//                   <div className="col-md-4 bg-primary">
-//                     <center className="my-5">
-//                       <b>Flate Rs. 250 off</b>
-//                     </center>
-//                   </div>
-//                   <div className="col-md-8">
-//                     <div className="card-body">
-//                       <p className="card-text">
-//                         Flat $250 off on minimum merchendise value $999! Use
-//                         codeFEST250
-//                       </p>
-//                     </div>
+//             </div>
+
+//             <div className="card mb-3" style={{ maxWidth: "540px" }}>
+//               <div className="row g-0">
+//                 <div className="col-md-4 bg-primary">
+//                   <center className="my-5">
+//                     <b>Flat Rs. 350 off</b>
+//                   </center>
+//                 </div>
+//                 <div className="col-md-8">
+//                   <div className="card-body">
+//                     <p className="card-text">
+//                       Flat $350 off on minimum merch purchase of Rs. 2000
+//                     </p>
+//                     <p className="card-text">
+//                       <small className="text-muted">15 days remaining</small>
+//                     </p>
 //                   </div>
 //                 </div>
 //               </div>
@@ -305,113 +289,223 @@
 //           </div>
 //         </div>
 //       </div>
-//     </>
+
+//       <div
+//         className="modal fade"
+//         id="getQ"
+//         tabindex="-1"
+//         aria-labelledby="exampleModalLabel"
+//         aria-hidden="true"
+//       >
+//         <div className="modal-dialog">
+//           <form>
+//             <div className="modal-content">
+//               <div className="modal-header">
+//                 <h1 className="modal-title fs-5" id="exampleModalLabel">
+//                   Get Quote
+//                 </h1>
+//                 <button
+//                   type="button"
+//                   className="btn-close"
+//                   data-bs-dismiss="modal"
+//                   aria-label="Close"
+//                 ></button>
+//               </div>
+//               <div className="modal-body">
+//                 <div className="mb-3">
+//                   <label for="exampleInputEmail1" className="form-label">
+//                     Quantity
+//                   </label>
+//                   <input
+//                     type="number"
+//                     className="form-control"
+//                     id="quantity"
+//                     name="quantity"
+//                     min="1"
+//                   />
+//                 </div>
+//               </div>
+//               <div className="modal-footer">
+//                 <button
+//                   type="submit"
+//                   className="btn btn-secondary"
+//                   data-bs-dismiss="modal"
+//                 >
+//                   Close
+//                 </button>
+//                 <button type="button" className="btn btn-primary">
+//                   Save changes
+//                 </button>
+//               </div>
+//             </div>
+//           </form>
+//         </div>
+//       </div>
+//     </div>
 //   );
 // }
 
 // export default ProductInfo;
 
+
 // import React, { useEffect, useState } from "react";
 // import { Link, useLocation, useParams } from "react-router-dom";
-// import parse from "html-react-parser";
 // import InnerImageZoom from "react-inner-image-zoom";
 // import "react-inner-image-zoom/lib/InnerImageZoom/styles.min.css";
-// import watch from "../../../assets/images/watch.jpg";
-// import { BiArrowBack } from "react-icons/bi";
 // import API_WRAPPER, { baseUrl } from "../../../api";
 // import success, { swalError } from "../../../utils";
 // import Ratings from "./Ratings";
 // import FilterCardAddToCart from "../cards/FilterCardAddToCart";
 
 // function ProductInfo() {
-//   const [selectedImage, setSelectedImage] = useState(watch);
+//   const [selectedImage, setSelectedImage] = useState(null);
 //   const [imagesList, setImagesList] = useState([]);
-//   const [allImagesList, setAllImagesList] = useState([]);
 //   const [showModal, setShowModal] = useState(false);
 //   const location = useLocation();
 //   const [product, setProduct] = useState([]);
 //   const [productVarients, setProductVarients] = useState([]);
 //   const [AllProductVarients, setAllProductVarients] = useState([]);
-//   const [filterList, setFilterList] = useState([]);
-//   const [displayedPrice, setDisplayedPrice] = useState(5000);
 //   const [filters, setFilters] = useState({});
-//   const [quantity, setQuantity] = useState(50);
+//   const [filterList, setFilterList] = useState([]);
+//   const [displayedPrice, setDisplayedPrice] = useState(0);
+//   const [defaultSelections, setDefaultSelections] = useState({});
+//   const [currency, setCurrency] = useState("$");
+//   const [quantity, setQuantity] = useState(1);
 //   const vid = location.state?.data;
 //   const { slug } = useParams();
 
-//   // const updatePriceBasedOnQuantity = (quantity) => {
-//   //   return product.price * (quantity / 50);
-//   // };
+//   useEffect(() => {
+//     fetchProductData();
+//   }, [slug]);
+
+//   useEffect(() => {
+//     if (productVarients?.details?.[0]?.price) {
+//       setDisplayedPrice(productVarients.details[0].price);
+//     }
+//   }, [productVarients]);
+
 //   const handleQuantityChange = (e) => {
-//     const newQuantity = parseInt(e.target.value);
+//     const newQuantity = parseInt(e.target.value, 10);
 //     setQuantity(newQuantity);
 //     updatePriceBasedOnQuantity(newQuantity);
 //   };
+
 //   const updatePriceBasedOnQuantity = (quantity) => {
 //     const priceData = productVarients?.details?.[0]?.data || [];
-
-//     console.log("Price data ", priceData);
-
-//     let price =
-//       productVarients?.details?.[0]?.price ||
-//       productVarients?.details?.[0]?.price;
-
+//     let currency = "$";
+//     let price = productVarients?.details?.[0]?.price || 0;
 //     for (let i = 0; i < priceData.length; i++) {
-//       const { minQuantity, price: variantPrice } = priceData[i];
-//       console.log("quantity ", quantity);
-//       console.log("variantPrice ", variantPrice);
+//       const {
+//         minQuantity,
+//         price: variantPrice,
+//         currency: variantCurrency,
+//       } = priceData[i];
 //       if (quantity >= minQuantity) {
 //         price = variantPrice;
+//         currency = variantCurrency;
 //       }
 //     }
 
+//     setCurrency(currency);
 //     setDisplayedPrice(price);
 //   };
 
-// const handleFilterSelection = (filterData) => {
-//   const { key, values } = filterData;
+//   // const handleFilterSelection = (filterData) => {
+//   //   const { key, values } = filterData;
 
-//   setFilters((prevFilters) => {
-//     const updatedFilters = { ...prevFilters, [key]: values };
+//   //   setFilters((prevFilters) => {
+//   //     const updatedFilters = { ...prevFilters, [key]: values };
 
-//     const filterMap = Object.keys(updatedFilters).reduce((acc, filterKey) => {
-//       acc[filterKey] = updatedFilters[filterKey];
-//       return acc;
-//     }, {});
+//   //     const filterMap = Object.keys(updatedFilters).reduce((acc, filterKey) => {
+//   //       acc[filterKey] = updatedFilters[filterKey];
+//   //       return acc;
+//   //     }, {});
 
-//     function isVariantMatching(variant, filterMap) {
-//       return Object.keys(filterMap).every((filterKey) => {
-//         const filterValues = filterMap[filterKey];
-//         if (filterValues.length === 0) return true;
-//         const variantValue = (variant[filterKey] || "").toLowerCase();
-//         return filterValues
-//           .map((val) => val.toLowerCase())
-//           .includes(variantValue);
-//       });
-//     }
+//   //     function isVariantMatching(variant, filterMap) {
+//   //       return Object.keys(filterMap).every((filterKey) => {
+//   //         const filterValues = filterMap[filterKey];
+//   //         if (filterValues.length === 0) return true;
+//   //         const variantValue = (variant[filterKey] || "").toLowerCase();
+//   //         return filterValues
+//   //           .map((val) => val.toLowerCase())
+//   //           .includes(variantValue);
+//   //       });
+//   //     }
 
-//     const filteredVariants = AllProductVarients.flatMap((product) =>
-//       product.variants.filter((variantObj) =>
-//         variantObj.varients.some((variant) =>
-//           isVariantMatching(variant, filterMap)
+//   //     const filteredVariants = AllProductVarients.flatMap((product) =>
+//   //       product.variants.filter((variantObj) =>
+//   //         variantObj.varients.some((variant) =>
+//   //           isVariantMatching(variant, filterMap)
+//   //         )
+//   //       )
+//   //     );
+
+//   //     if (filteredVariants.length > 0) {
+//   //       console.log("filteredVariants[0] ", filteredVariants[0]);
+//   //       setProductVarients(filteredVariants[0]);
+//   //       const images = filteredVariants[0].details[0]?.images || [];
+//   //       setImagesList(images);
+//   //       setSelectedImage(images[0]);
+//   //     } else {
+//   //       swalError("Warning", "No matching variant found.", () => {
+//   //         setShowModal(false);
+//   //       });
+//   //     }
+
+//   //     return updatedFilters;
+//   //   });
+//   // };
+
+
+//   const handleFilterSelection = (filterData) => {
+//     const { key, values } = filterData;
+
+//     setFilters((prevFilters) => {
+//       const updatedFilters = { ...prevFilters, [key]: values };
+
+//       const filterMap = Object.keys(updatedFilters).reduce((acc, filterKey) => {
+//         acc[filterKey] = updatedFilters[filterKey];
+//         return acc;
+//       }, {});
+
+//       function isVariantMatching(variant, filterMap) {
+//         return Object.keys(filterMap).every((filterKey) => {
+//           const filterValues = filterMap[filterKey];
+//           if (filterValues.length === 0) return true;
+//           const variantValue = (variant[filterKey] || "").toLowerCase();
+//           return filterValues
+//             .map((val) => val.toLowerCase())
+//             .includes(variantValue);
+//         });
+//       }
+
+//       const filteredVariants = AllProductVarients.flatMap((product) =>
+//         product.variants.filter((variantObj) =>
+//           variantObj.varients.some((variant) =>
+//             isVariantMatching(variant, filterMap)
+//           )
 //         )
-//       )
-//     );
+//       );
 
-//     if (filteredVariants.length > 0) {
-//       setProductVarients(filteredVariants[0]);
-//       const images = filteredVariants[0].details[0]?.images || [];
-//       setImagesList(images);
-//       setSelectedImage(images[0]);
-//     } else {
-//       swalError("Warning", "No matching variant found.", () => {
-//         setShowModal(false);
+//       const validVariant = filteredVariants.find((variant) => {
+//         const details = variant.details[0] || {};
+//         return details.quantity > 0 && details.price > 0;
 //       });
-//     }
 
-//     return updatedFilters;
-//   });
-// };
+//       if (validVariant) {
+//         setProductVarients(validVariant);
+//         const images = validVariant.details[0]?.images || [];
+//         setImagesList(images);
+//         setSelectedImage(images[0]);
+//       } else {
+//         swalError("Warning", "This variant is not available.", () => {
+//           setShowModal(false);
+//         });
+//       }
+
+//       return updatedFilters;
+//     });
+//   };
 
 //   const fetchProductData = async () => {
 //     try {
@@ -421,9 +515,6 @@
 //         setProduct(data.productVariantDetails);
 //         setFilterList(data.filterList);
 
-//         const allImages = extractImages(data);
-//         setAllImagesList(allImages);
-
 //         setAllProductVarients(data.productVariantDetails);
 //         const matchingVariant = data.productVariantDetails
 //           .flatMap((product) => product.variants)
@@ -434,6 +525,15 @@
 //           const images = matchingVariant.details[0]?.images || [];
 //           setImagesList(images);
 //           setSelectedImage(images[0]);
+
+//           const defaultSelections = {};
+//           if (matchingVariant.varients.length > 0) {
+//             matchingVariant.varients[0] &&
+//               Object.keys(matchingVariant.varients[0]).forEach((key) => {
+//                 defaultSelections[key] = matchingVariant.varients[0][key];
+//               });
+//           }
+//           setDefaultSelections(defaultSelections);
 //         } else {
 //           swalError("Warning", "Variant not found", () => {
 //             setShowModal(false);
@@ -449,124 +549,84 @@
 //     }
 //   };
 
-//   const extractImages = (data) => {
-//     if (!Array.isArray(data.productVariantDetails)) {
-//       console.error(
-//         "productVariantDetails is not an array:",
-//         data.productVariantDetails
-//       );
-//       return [];
-//     }
-
-//     const allImagesList = data.productVariantDetails.flatMap((variant) => {
-//       if (!Array.isArray(variant.variants)) {
-//         console.error("variants is not an array for variant:", variant);
-//         return [];
-//       }
-
-//       return variant.variants.flatMap((variantItem) => {
-//         if (!Array.isArray(variantItem.details)) {
-//           console.error(
-//             "details is not an array for variantItem:",
-//             variantItem
-//           );
-//           return [];
-//         }
-
-//         return variantItem.details.flatMap((detail) => {
-//           if (!Array.isArray(detail.images)) {
-//             console.error("images is not an array for detail:", detail);
-//             return [];
-//           }
-//           return detail.images.filter((image) => image);
-//         });
-//       });
-//     });
-
-//     return allImagesList;
-//   };
-
-//   useEffect(() => {
-//     fetchProductData();
-//   }, [slug]);
-
 //   return (
-//     <>
-//       <div className="container mt-4">
-//         <Link to="/" className="btn btn-outline-secondary mb-4">
-//           <BiArrowBack className="me-2" />
-//           Back
-//         </Link>
+//     <div className="container mt-4">
+//       <Link to="/" className="btn btn-outline-secondary mb-4">
+//         Back
+//       </Link>
 
-//         <div className="row" style={{ backgroundColor: "rgb(255, 253, 246)" }}>
-//           <div className="col-lg-9 col-md-9 col-12">
-//             <div className="row">
-//               <div className="col-lg-6 col-md-12 col-12">
-//                 <div className="card my-3" style={{ width: "18rem;" }}>
-//                   <InnerImageZoom
-//                     className="rounded-3 d-flex justify-content-center my-2"
-//                     src={`${baseUrl}/${selectedImage}`}
-//                     zoomType="hover"
-//                     zoomScale={1.5}
-//                   />
-//                   <div className="card-body mt-2">
-//                     {imagesList.map((image, index) => (
-//                       <img
-//                         key={index}
-//                         src={`${baseUrl}/${image}`}
-//                         alt={`Thumbnail ${index + 1}`}
-//                         className="img-thumbnail cursor-pointer mx-2 bg-light"
-//                         style={{
-//                           width: "100px",
-//                           height: "100px",
-//                           objectFit: "cover",
-//                         }}
-//                         onClick={() => setSelectedImage(image)}
-//                       />
-//                     ))}
-//                   </div>
+//       <div className="row" style={{ backgroundColor: "rgb(255, 253, 246)" }}>
+//         <div className="col-lg-9 col-md-9 col-12">
+//           <div className="row">
+//             <div className="col-lg-6 col-md-12 col-12">
+//               <div className="card my-3" style={{ width: "18rem;" }}>
+//                 <InnerImageZoom
+//                   className="rounded-3 d-flex justify-content-center my-2"
+//                   src={`${baseUrl}/${selectedImage}`}
+//                   zoomType="hover"
+//                   zoomScale={1.5}
+//                 />
+//                 <div className="card-body mt-2">
+//                   {imagesList.map((image, index) => (
+//                     <img
+//                       key={index}
+//                       src={`${baseUrl}/${image}`}
+//                       alt={`Thumbnail ${index + 1}`}
+//                       className="img-thumbnail cursor-pointer mx-2 bg-light"
+//                       style={{
+//                         width: "100px",
+//                         height: "100px",
+//                         objectFit: "cover",
+//                       }}
+//                       onClick={() => setSelectedImage(image)}
+//                     />
+//                   ))}
 //                 </div>
 //               </div>
+//             </div>
 
-//               <div className="col-lg-6 col-md-12 col-12">
-//                 <h1 className="display-5">{product?.[0]?.name}</h1>
-//                 {console.log("productVarients ta tang ", productVarients)}
-//                 <span className="fs-2">
-//                   ${productVarients?.details?.[0]?.price}
-//                 </span>
-//                 <div className="">
-//                   <Ratings rating={3} />
-//                   {/* <p>({product.reviewsCount} Reviews)</p> */}
-//                   <p>10 (Reviews)</p>
-//                 </div>
-//                 <div className="mb-1">
-//                   <label htmlFor="quantity" className="form-label">
-//                     Quantity
-//                   </label>
-//                   <input
-//                     type="number"
-//                     className="form-control"
-//                     id="quantity"
-//                     value={quantity}
-//                     min="50"
-//                     // onChange={(e) => setQuantity(parseInt(e.target.value))}
-//                     onChange={handleQuantityChange}
-//                   />
-//                 </div>
-//                 <button className="btn btn-primary w-100 mb-2">
-//                   <i
-//                     className="fa fa-shopping-cart"
-//                     style={{ fontSize: "20px" }}
-//                   ></i>
-//                   Add to Cart
-//                 </button>
-//                 <button className="btn btn-outline-primary w-100">
-//                   Get Quote
-//                 </button>
+//             <div className="col-lg-6 col-md-12 col-12">
+//               <h1 className="display-5">{product?.[0]?.name}</h1>
+//               <span className="fs-2">
+//                 {currency}
+//                 {displayedPrice}
+//               </span>
+//               <div className="">
+//                 <Ratings rating={3} />
+//                 <p>10 (Reviews)</p>
+//               </div>
+//               <div className="mb-1">
+//                 <label htmlFor="quantity" className="form-label">
+//                   Quantity
+//                 </label>
+//                 <input
+//                   type="number"
+//                   className="form-control"
+//                   id="quantity"
+//                   value={quantity}
+//                   min="1"
+//                   onChange={handleQuantityChange}
+//                 />
+//               </div>
+//               <button className="btn btn-primary w-100 mb-2">
+//                 <i
+//                   className="fa fa-shopping-cart"
+//                   style={{ fontSize: "20px" }}
+//                 ></i>
+//                 Add to Cart
+//               </button>
+//               <button
+//                 className="btn btn-outline-primary w-100"
+//                 data-bs-toggle="modal"
+//                 data-bs-target="#getQ"
+//               >
+//                 Get Quote
+//               </button>
 
-//                 <div className="mt-2">
-//                   {filterList &&
-//                     Object.keys(filterList).map((filter) => (
+//               <div className="mt-2">
+//                 {filterList &&
+//                   Object.keys(filterList).map((filter) => {
+//                     return (
 //                       <FilterCardAddToCart
 //                         key={filter}
 //                         title="Product Filter"
@@ -575,50 +635,55 @@
 //                         filters={filterList[filter].map((filterName) => ({
 //                           filterName,
 //                         }))}
-//                         defaultSelection={productVarients[filter] || ""}
+//                         defaultSelection={defaultSelections[filter] || ""}
 //                       />
-//                     ))}
-//                 </div>
+//                     );
+//                   })}
 //               </div>
 //             </div>
 //           </div>
+//         </div>
 
-//           <div className="col-lg-3 col-md-3 col-12">
-//             <center>
-//               <p>Ongoing Offers!</p>
-//             </center>
-//             <div>
-//               <div className="card mb-3" style={{ maxWidth: "540px" }}>
-//                 <div className="row g-0">
-//                   <div className="col-md-4 bg-primary">
-//                     <center className="my-5">
-//                       <b>Flate Rs. 250 off</b>
-//                     </center>
-//                   </div>
-//                   <div className="col-md-8">
-//                     <div className="card-body">
-//                       <p className="card-text">
-//                         Flat $250 off on minimum merchendise value $999! Use
-//                         codeFEST250
-//                       </p>
-//                     </div>
+//         <div className="col-lg-3 col-md-3 col-12">
+//           <center>
+//             <p>Ongoing Offers!</p>
+//           </center>
+//           <div>
+//             <div className="card mb-3" style={{ maxWidth: "540px" }}>
+//               <div className="row g-0">
+//                 <div className="col-md-4 bg-primary">
+//                   <center className="my-5">
+//                     <b>Flat Rs. 250 off</b>
+//                   </center>
+//                 </div>
+//                 <div className="col-md-8">
+//                   <div className="card-body">
+//                     <p className="card-text">
+//                       Flat $250 off on minimum merch purchase of Rs. 1000
+//                     </p>
+//                     <p className="card-text">
+//                       <small className="text-muted">31 days remaining</small>
+//                     </p>
 //                   </div>
 //                 </div>
 //               </div>
-//               <div className="card mb-3" style={{ maxWidth: "540px" }}>
-//                 <div className="row g-0">
-//                   <div className="col-md-4 bg-primary">
-//                     <center className="my-5">
-//                       <b>Flate Rs. 250 off</b>
-//                     </center>
-//                   </div>
-//                   <div className="col-md-8">
-//                     <div className="card-body">
-//                       <p className="card-text">
-//                         Flat $250 off on minimum merchendise value $999! Use
-//                         codeFEST250
-//                       </p>
-//                     </div>
+//             </div>
+
+//             <div className="card mb-3" style={{ maxWidth: "540px" }}>
+//               <div className="row g-0">
+//                 <div className="col-md-4 bg-primary">
+//                   <center className="my-5">
+//                     <b>Flat Rs. 350 off</b>
+//                   </center>
+//                 </div>
+//                 <div className="col-md-8">
+//                   <div className="card-body">
+//                     <p className="card-text">
+//                       Flat $350 off on minimum merch purchase of Rs. 2000
+//                     </p>
+//                     <p className="card-text">
+//                       <small className="text-muted">15 days remaining</small>
+//                     </p>
 //                   </div>
 //                 </div>
 //               </div>
@@ -626,11 +691,66 @@
 //           </div>
 //         </div>
 //       </div>
-//     </>
+
+//       <div
+//         className="modal fade"
+//         id="getQ"
+//         tabindex="-1"
+//         aria-labelledby="exampleModalLabel"
+//         aria-hidden="true"
+//       >
+//         <div className="modal-dialog">
+//           <form>
+//             <div className="modal-content">
+//               <div className="modal-header">
+//                 <h1 className="modal-title fs-5" id="exampleModalLabel">
+//                   Get Quote
+//                 </h1>
+//                 <button
+//                   type="button"
+//                   className="btn-close"
+//                   data-bs-dismiss="modal"
+//                   aria-label="Close"
+//                 ></button>
+//               </div>
+//               <div className="modal-body">
+//                 <div className="mb-3">
+//                   <label for="exampleInputEmail1" className="form-label">
+//                     Quantity
+//                   </label>
+//                   <input
+//                     type="number"
+//                     className="form-control"
+//                     id="quantity"
+//                     name="quantity"
+//                     min="1"
+//                   />
+//                 </div>
+//               </div>
+//               <div className="modal-footer">
+//                 <button
+//                   type="submit"
+//                   className="btn btn-secondary"
+//                   data-bs-dismiss="modal"
+//                 >
+//                   Close
+//                 </button>
+//                 <button type="button" className="btn btn-primary">
+//                   Save changes
+//                 </button>
+//               </div>
+//             </div>
+//           </form>
+//         </div>
+//       </div>
+//     </div>
 //   );
 // }
 
 // export default ProductInfo;
+
+
+
 
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
@@ -694,6 +814,7 @@ function ProductInfo() {
     setDisplayedPrice(price);
   };
 
+
   const handleFilterSelection = (filterData) => {
     const { key, values } = filterData;
 
@@ -724,13 +845,18 @@ function ProductInfo() {
         )
       );
 
-      if (filteredVariants.length > 0) {
-        setProductVarients(filteredVariants[0]);
-        const images = filteredVariants[0].details[0]?.images || [];
+      const validVariant = filteredVariants.find((variant) => {
+        const details = variant.details[0] || {};
+        return details.quantity > 0 && details.price > 0;
+      });
+
+      if (validVariant) {
+        setProductVarients(validVariant);
+        const images = validVariant.details[0]?.images || [];
         setImagesList(images);
         setSelectedImage(images[0]);
       } else {
-        swalError("Warning", "No matching variant found.", () => {
+        swalError("Warning", "This variant is not available.", () => {
           setShowModal(false);
         });
       }
@@ -967,7 +1093,7 @@ function ProductInfo() {
                 >
                   Close
                 </button>
-                <button type="button" className="btn btn-primary">
+                <button type="submit" className="btn btn-primary">
                   Save changes
                 </button>
               </div>

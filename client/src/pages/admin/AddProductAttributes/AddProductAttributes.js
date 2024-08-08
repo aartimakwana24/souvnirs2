@@ -341,17 +341,17 @@ function AddProductAttributes({ formData, setFormData }) {
                         return;
                       } else {
                         let x = generateValueCombinations();
-                         dispatch(
-                            setProduct({ attributes: selectedAttributes })
+                        dispatch(
+                          setProduct({ attributes: selectedAttributes })
+                        );
+                        setAttSelected(true);
+
+                        if (x) {
+                          success(
+                            "Varients Created",
+                            "Varient Created Successfully!"
                           );
-                          setAttSelected(true);
-                       
-                        if(x){
-                           success(
-                             "Varients Created",
-                             "Varient Created Successfully!"
-                           );
-                      }
+                        }
                       }
                     }}
                   >

@@ -389,6 +389,133 @@ function AddVarients() {
     }
   };
 
+
+  const handleSkipVariant = async (_id) => {
+    const defaultValues = {
+      _id: _id,
+      description: "",
+      tags: [],
+      croppedImageUrl: "",
+      img: [],
+      quantity: "0",
+      status: "INACTIVE",
+      price: "0",
+      sku: "",
+      readyToShip: false,
+      freeShipping: false,
+      customization: {
+        xAxis: 0,
+        yAxis: 0,
+        height: 0,
+        width: 0,
+      },
+      data: [
+        {
+          minQuantity: "",
+          price: "",
+          currency: "",
+        },
+      ],
+    };
+
+    sessionStorage.setItem(`formData${_id}`, JSON.stringify(defaultValues));
+
+    const formDataToSend = new FormData();
+    formDataToSend.append("quantity", defaultValues.quantity);
+    formDataToSend.append("status", defaultValues.status);
+    formDataToSend.append("readyToShip", defaultValues.readyToShip);
+    formDataToSend.append("freeShipping", defaultValues.freeShipping);
+    formDataToSend.append("price", defaultValues.price);
+    formDataToSend.append("sku", defaultValues.sku);
+    formDataToSend.append("description", defaultValues.description);
+    formDataToSend.append("pvid", _id);
+    formDataToSend.append("data", JSON.stringify(defaultValues.data));
+
+    // Add images if any
+    defaultValues.img.forEach((file, index) => {
+      formDataToSend.append(`img`, file);
+    });
+
+    if (defaultValues.croppedImageUrl) {
+      formDataToSend.append("croppedImageUrl", defaultValues.croppedImageUrl);
+    }
+
+    formDataToSend.append(
+      "customization",
+      JSON.stringify(defaultValues.customization)
+    );
+
+    if (defaultValues.tags && Array.isArray(defaultValues.tags)) {
+      defaultValues.tags.forEach((tag, index) => {
+        formDataToSend.append(`tags[${index}]`, tag);
+      });
+    }
+
+    try {
+      let existRes = await API_WRAPPER.get(
+        `/productsDetails/check-varient/${_id}`
+      );
+      const ifExist = existRes.data.exists;
+
+      if (!ifExist) {
+        let varientResp = await API_WRAPPER.post(
+          "/productsDetails/create-varients",
+          formDataToSend,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        if (varientResp.status === 201) {
+          success("Variant Created", "Variant Skiped Successfully!");
+        }
+      } else {
+        let updateVarientResp = await API_WRAPPER.put(
+          `/productsDetails/update-varients/${_id}`,
+          formDataToSend,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        if (updateVarientResp.status === 200) {
+          success("Variant Update", "Variant Update Successfully!");
+        }
+      }
+
+      const currentIndex = varientsData.findIndex(
+        (variant) => variant._id === _id
+      );
+      const updatedIsPublished = { ...isPublished };
+
+      if (currentIndex < varientsData.length - 1) {
+        updatedIsPublished[`tab${currentIndex + 2}`] = true;
+        sessionStorage.setItem(`tab${currentIndex + 2}`, "true");
+      }
+      setIsPublished(updatedIsPublished);
+
+      if (currentIndex < varientsData.length - 1) {
+        setActiveTab({
+          _id: varientsData[currentIndex + 1]._id,
+          tab: `tab${currentIndex + 2}`,
+        });
+        setBackTrack(0);
+      } else {
+        sessionStorage.clear();
+        navigate(PATHS.adminProductManagement);
+      }
+    } catch (error) {
+      console.log("Error in handleSkipVariant ", error);
+    }
+
+    console.log("Skipped variant data:", defaultValues);
+  };
+
+
   const handlePublish = async () => {
     try {
       const isTableValid = validateTableData();
@@ -882,7 +1009,6 @@ function AddVarients() {
                         <Link
                           onClick={(e) => {
                             handleSubmit(e, _id);
-                            // navigate(PATHS.adminAddProductPrices);
                           }}
                           className="btn btn-primary"
                         >
@@ -895,6 +1021,12 @@ function AddVarients() {
                         </Link>
                       </div>
                     </div>
+                    <button
+                      className="btn btn-danger my-5 w-100"
+                      onClick={() => handleSkipVariant(_id)}
+                    >
+                      Skip Varient
+                    </button>
                   </motion.div>
                 </div>
               </div>
