@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/admin/Dashboard/AdminDashboard.js";
 import MyChart from "./MyChart.js";
 import ShopLayout from "./Layout/ShopLayout.js";
 import { QueryClientProvider, QueryClient } from "react-query";
+import Demo from "./components/shop/components/demo.js";
 
 import {
   adminRoutes,
@@ -27,7 +28,7 @@ function App() {
     <>
      <QueryClientProvider client={queryClient}>
       <Routes>
-        {/* <Route path={PATHS.root} element={<MyChart />} /> */}
+        <Route path='demo' element={<Demo />} />
         <Route
           path={PATHS.login}
           element={

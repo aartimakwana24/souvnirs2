@@ -1,0 +1,1059 @@
+exactly apply this functionality in my actual code 
+import React, { useEffect, useState } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
+import InnerImageZoom from "react-inner-image-zoom";
+import "react-inner-image-zoom/lib/InnerImageZoom/styles.min.css";
+import API_WRAPPER, { baseUrl } from "../../../api";
+import success, { swalError } from "../../../utils";
+import Ratings from "./Ratings";
+import FilterCardAddToCart from "../cards/FilterCardAddToCart";
+
+function ProductInfo() {
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagesList, setImagesList] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const location = useLocation();
+  const [product, setProduct] = useState([]);
+  const [productVarients, setProductVarients] = useState([]);
+  const [AllProductVarients, setAllProductVarients] = useState([]);
+  const [filters, setFilters] = useState({});
+  const [filterList, setFilterList] = useState([]);
+  const [displayedPrice, setDisplayedPrice] = useState(0);
+  const [defaultSelections, setDefaultSelections] = useState({});
+  const [currency, setCurrency] = useState("$");
+  const [quantity, setQuantity] = useState(1);
+  const [disabledOptions, setDisabledOptions] = useState({});
+  const [invalidVariants, setInvalidVarients] = useState([]);
+
+  const vid = location.state?.data;
+  const { slug } = useParams();
+
+  useEffect(() => {
+    fetchProductData();
+  }, [slug]);
+
+  useEffect(() => {
+    if (productVarients?.details?.[0]?.price) {
+      setDisplayedPrice(productVarients.details[0].price);
+    }
+  }, [productVarients]);
+
+  const handleQuantityChange = (e) => {
+    const newQuantity = parseInt(e.target.value, 10);
+    setQuantity(newQuantity);
+    updatePriceBasedOnQuantity(newQuantity);
+  };
+
+  const updatePriceBasedOnQuantity = (quantity) => {
+    const priceData = productVarients?.details?.[0]?.data || [];
+    let currency = "$";
+    let price = productVarients?.details?.[0]?.price || 0;
+    for (let i = 0; i < priceData.length; i++) {
+      const {
+        minQuantity,
+        price: variantPrice,
+        currency: variantCurrency,
+      } = priceData[i];
+      if (quantity >= minQuantity) {
+        price = variantPrice;
+        currency = variantCurrency;
+      }
+    }
+
+    setCurrency(currency);
+    setDisplayedPrice(price);
+  };
+  function isVariantMatching(variant, filterMap) {
+    return Object.keys(filterMap).every((filterKey) => {
+      const filterValues = filterMap[filterKey];
+      if (filterValues.length === 0) return true;
+      const variantValue = (variant[filterKey] || "").toLowerCase();
+      return filterValues
+        .map((val) => val.toLowerCase())
+        .includes(variantValue);
+    });
+  }
+
+  const handleFilterSelection = (filterData) => {
+    const { key, values } = filterData;
+    setDisabledOptions({});
+    console.log("Key values", values);
+    setFilters((prevFilters) => {
+      const updatedFilters = { ...prevFilters, [key]: values };
+
+      const filterMap = Object.keys(updatedFilters).reduce((acc, filterKey) => {
+        acc[filterKey] = updatedFilters[filterKey];
+        return acc;
+      }, {});
+
+      console.log("AllProductVarients ", AllProductVarients);
+      const filteredVariants = AllProductVarients.flatMap((product) =>
+        product.variants.filter((variantObj) =>
+          variantObj.varients.some((variant) =>
+            isVariantMatching(variant, filterMap)
+          )
+        )
+      );
+
+      const validValuesMap = {};
+      const validVariant = filteredVariants.find((variant) => {
+        const details = variant.details[0] || {};
+        return details.quantity > 0 && details.price > 0;
+      });
+
+      const allInvalidVariants = AllProductVarients.flatMap((product) =>
+        product.variants.filter((variantObj) =>
+          variantObj.varients.some((variant) => {
+            const detail = variantObj.details[0] || {};
+            return detail.quantity <= 0 || detail.price <= 0;
+          })
+        )
+      );
+
+      console.log("allInvalidVariants ", allInvalidVariants);
+      setInvalidVarients(allInvalidVariants);
+      const disabledOptions = {};
+
+      allInvalidVariants.forEach((variantObj) => {
+        variantObj.varients.forEach((variant) => {
+          Object.entries(variant).forEach(([key, value]) => {
+            if (!disabledOptions[key]) {
+              disabledOptions[key] = [];
+            }
+            if (!disabledOptions[key].includes(value)) {
+              disabledOptions[key].push(value);
+            }
+          });
+        });
+      });
+
+      if (validVariant) {
+        setProductVarients(validVariant);
+        const images = validVariant.details[0]?.images || [];
+        setImagesList(images);
+        setSelectedImage(images[0]);
+      } else {
+        setDisabledOptions(disabledOptions);
+        swalError("Warning", "This product is not available.", () => {
+          setShowModal(false);
+        });
+      }
+
+      return updatedFilters;
+    });
+  };
+
+  const fetchProductData = async () => {
+    try {
+      const res = await API_WRAPPER.get(`/product/${slug}`);
+      const data = res.data;
+      console.log("DAta ", data);
+      if (res.status === 200) {
+        // Set product details and filter list
+        setProduct(data.productVariantDetails);
+        setFilterList(data.filterList);
+        setAllProductVarients(data.productVariantDetails);
+
+        const disabledOptions = {};
+        const enabledOptions = {};
+
+        // First, collect all enabled options based on non-zero price and quantity
+        data.productVariantDetails.forEach((product) => {
+          product.variants.forEach((variant) => {
+            const { price, quantity } = variant.details[0] || {};
+            if (price > 0 && quantity > 0) {
+              variant.varients.forEach((attr) => {
+                Object.entries(attr).forEach(([key, value]) => {
+                  if (!enabledOptions[key]) {
+                    enabledOptions[key] = new Set();
+                  }
+                  enabledOptions[key].add(value);
+                });
+              });
+            }
+          });
+        });
+
+        // Next, identify which options are disabled
+        data.productVariantDetails.forEach((product) => {
+          product.variants.forEach((variant) => {
+            const { price, quantity } = variant.details[0] || {};
+            if (price === 0 || quantity === 0) {
+              variant.varients.forEach((attr) => {
+                Object.entries(attr).forEach(([key, value]) => {
+                  if (!disabledOptions[key]) {
+                    disabledOptions[key] = new Set();
+                  }
+                  // Only disable options that are not part of the enabled options
+                  if (!enabledOptions[key] || !enabledOptions[key].has(value)) {
+                    disabledOptions[key].add(value);
+                  }
+                });
+              });
+            }
+          });
+        });
+
+        // Convert Sets to arrays for final output
+        Object.keys(disabledOptions).forEach((key) => {
+          disabledOptions[key] = Array.from(disabledOptions[key]);
+        });
+
+        setDisabledOptions(disabledOptions);
+
+        const matchingVariant = data.productVariantDetails
+          .flatMap((product) => product.variants)
+          .find((variant) => variant._id === vid);
+
+        if (matchingVariant) {
+          setProductVarients(matchingVariant);
+          const images = matchingVariant.details[0]?.images || [];
+          setImagesList(images);
+          setSelectedImage(images[0]);
+
+          const defaultSelections = {};
+          if (matchingVariant.varients.length > 0) {
+            matchingVariant.varients[0] &&
+              Object.keys(matchingVariant.varients[0]).forEach((key) => {
+                defaultSelections[key] = matchingVariant.varients[0][key];
+                console.log("defaultSelections[key] ", defaultSelections[key]);
+              });
+          }
+          setDefaultSelections(defaultSelections);
+        } else {
+          swalError("Warning", "Variant not found", () => {
+            setShowModal(false);
+          });
+        }
+      } else {
+        swalError("Warning", res.data.msg, () => {
+          setShowModal(false);
+        });
+      }
+    } catch (error) {
+      console.log("Error in fetchProductData in ProductInfo.js ", error);
+    }
+  };
+  
+  const isAddToCartDisabled = (disabledOptions) => {
+    for (let key in disabledOptions) {
+      if (disabledOptions[key].length > 0) {
+        return true; 
+      }
+    }
+    return false; 
+  };
+
+  return (
+    <div className="container mt-4">
+      <Link to="/" className="btn btn-outline-secondary mb-4">
+        Back
+      </Link>
+
+      <div className="row" style={{ backgroundColor: "rgb(255, 253, 246)" }}>
+        <div className="col-lg-9 col-md-9 col-12">
+          <div className="row">
+            <div className="col-lg-6 col-md-12 col-12">
+              <div className="card my-3" style={{ width: "18rem;" }}>
+                <InnerImageZoom
+                  className="rounded-3 d-flex justify-content-center my-2"
+                  src={`${baseUrl}/${selectedImage}`}
+                  zoomType="hover"
+                  zoomScale={1.5}
+                />
+                <div className="card-body mt-2">
+                  {imagesList.map((image, index) => (
+                    <img
+                      key={index}
+                      src={`${baseUrl}/${image}`}
+                      alt={`Thumbnail ${index + 1}`}
+                      className="img-thumbnail cursor-pointer mx-2 bg-light"
+                      style={{
+                        width: "100px",
+                        height: "100px",
+                        objectFit: "cover",
+                      }}
+                      onClick={() => setSelectedImage(image)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="col-lg-6 col-md-12 col-12">
+              <h1 className="display-5">{product?.[0]?.name}</h1>
+              <span className="fs-2">
+                {currency}
+                {displayedPrice}
+              </span>
+              <div className="">
+                <Ratings rating={3} />
+                <p>10 (Reviews)</p>
+              </div>
+              <div className="mb-1">
+                <label htmlFor="quantity" className="form-label">
+                  Quantity
+                </label>
+                <input
+                  type="number"
+                  className="form-control"
+                  id="quantity"
+                  value={quantity}
+                  min="1"
+                  onChange={handleQuantityChange}
+                />
+              </div>
+              {/* {console.log("ki maa ka ", disabledOptions)} */}
+              {isAddToCartDisabled(disabledOptions) ? (
+                <>
+                  <h5 style={{ display: "inline" }}>Sold Out</h5>
+                  <p
+                    className="text-success ms-3"
+                    style={{ display: "inline" }}
+                  >
+                    ( Out of Stock)
+                  </p>
+                  <button className="btn btn-primary w-100 mb-2" disabled>
+                    <i
+                      className="fa fa-shopping-cart"
+                      style={{ fontSize: "20px" }}
+                    ></i>
+                    Add to Cart
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button className="btn btn-primary w-100 mb-2">
+                    <i
+                      className="fa fa-shopping-cart"
+                      style={{ fontSize: "20px" }}
+                    ></i>
+                    Add to Cart
+                  </button>
+                </>
+              )}
+
+              <button
+                className="btn btn-outline-primary w-100"
+                data-bs-toggle="modal"
+                data-bs-target="#getQ"
+              >
+                Get Quote
+              </button>
+
+              <div className="mt-2">
+                {filterList &&
+                  Object.keys(filterList).map((filter) => {
+                    return (
+                      <FilterCardAddToCart
+                        key={filter}
+                        title="Product Filter"
+                        onSelect={handleFilterSelection}
+                        heading={filter}
+                        filters={filterList[filter].map((filterName) => ({
+                          filterName,
+                          disabled: (disabledOptions[filter] || []).includes(
+                            filterName
+                          ),
+                        }))}
+                        defaultSelection={defaultSelections[filter] || ""}
+                      />
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-lg-3 col-md-3 col-12">
+          <center>
+            <p>Ongoing Offers!</p>
+          </center>
+          <div>
+            <div className="card mb-3" style={{ maxWidth: "540px" }}>
+              <div className="row g-0">
+                <div className="col-md-4 bg-primary">
+                  <center className="my-5">
+                    <b>Flat Rs. 250 off</b>
+                  </center>
+                </div>
+                <div className="col-md-8">
+                  <div className="card-body">
+                    <p className="card-text">
+                      Flat $250 off on minimum merch purchase of Rs. 1000
+                    </p>
+                    <p className="card-text">
+                      <small className="text-muted">31 days remaining</small>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card mb-3" style={{ maxWidth: "540px" }}>
+              <div className="row g-0">
+                <div className="col-md-4 bg-primary">
+                  <center className="my-5">
+                    <b>Flat Rs. 350 off</b>
+                  </center>
+                </div>
+                <div className="col-md-8">
+                  <div className="card-body">
+                    <p className="card-text">
+                      Flat $350 off on minimum merch purchase of Rs. 2000
+                    </p>
+                    <p className="card-text">
+                      <small className="text-muted">15 days remaining</small>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="modal fade"
+        id="getQ"
+        tabindex="-1"
+        aria-labelledby="exampleModalLabel"
+        aria-hidden="true"
+      >
+        <div className="modal-dialog">
+          <form>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h1 className="modal-title fs-5" id="exampleModalLabel">
+                  Get Quote
+                </h1>
+                <button
+                  type="button"
+                  className="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label for="exampleInputEmail1" className="form-label">
+                    Quantity
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="quantity"
+                    name="quantity" min="1"/></div></div>
+              <div className="modal-footer">
+                <button
+                  type="submit"
+                  className="btn btn-secondary"
+                  data-bs-dismiss="modal"
+                >
+                  Close
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Save changes
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div></div>);}export default ProductInfo;   This is my ProductInfo.js and this is my 
+import React, { useState, useEffect } from "react";
+function FilterCardAddToCart({
+  title,
+  onSelect,
+  heading,
+  filters,
+  defaultSelection,
+}) {
+  const [selectedFilter, setSelectedFilter] = useState([]);
+
+  useEffect(() => {
+    if (defaultSelection && selectedFilter.length === 0) {
+      setSelectedFilter([defaultSelection]);
+      onSelect({ key: heading, values: [defaultSelection] });
+    }
+  }, [defaultSelection, heading, onSelect, selectedFilter]);
+
+  const handleSelectionChange = (filterName) => {
+    setSelectedFilter([filterName]);
+    onSelect({ key: heading, values: [filterName] });
+  };
+
+  {
+    console.log("filters.disabled ", filters.disabled);
+  }
+  return (
+    <div className="filter-card">
+      <h6 className="text-info fw-bold">{heading}</h6>
+      <div className="filter-options">
+        {filters.map((filter, index) => (
+          <div key={index} className="filter-option">
+            <input
+              type="radio"
+              className="form-check-input"
+              id={`filter-${heading}-${index}`}
+              name={`filter-${heading}`}
+              value={filter.filterName}
+              checked={selectedFilter.includes(filter.filterName)}
+              onChange={() => handleSelectionChange(filter.filterName)}
+            />
+            <label
+              htmlFor={`filter-${heading}-${index}`}
+              className={`filter-label ${
+                filter.disabled ? "text-secondary" : ""
+              }`}
+            >
+              {filter.filterName}
+            </label>
+          </div>
+        ))}
+      </div>
+    </div>
+  );}export default FilterCardAddToCart;  and this is my FilterCardAddToCart.js   dont take sample data take data dynamicaly it comes from the backend like this [
+    {
+        "_id": "66b9da38a8fcf2846e0316b2",
+        "name": "Puma Shoes",
+        "vendorId": "66614aa4ed4624cdb070363c",
+        "categoryId": "66a8dbec4efc8b9d84ad7e76",
+        "stockStatus": "IN_STOCK",
+        "slug": "Puma Shoes",
+        "approval": "APPROVE",
+        "selectedAtt": [
+            "66614b07ed4624cdb070364b",
+            "66614b01ed4624cdb0703648",
+            "66614b62ed4624cdb070365e"
+        ],
+        "CreatedTime": "2024-08-12T09:47:36.865Z",
+        "UpdatedTime": "2024-08-12T09:47:36.865Z",
+        "createdAt": "2024-08-12T09:47:36.883Z",
+        "updatedAt": "2024-08-12T09:47:36.883Z",
+        "__v": 0,
+        "variants": [
+            {
+                "_id": "66b9da38a8fcf2846e0316ba",
+                "pid": "66b9da38a8fcf2846e0316b2",
+                "varients": [
+                    {
+                        "Size": "6",
+                        "Brand": "Puma",
+                        "Color": "white"
+                    }
+                ],
+                "Status": "DRAFT",
+                "CreatedTime": "2024-08-12T09:47:36.959Z",
+                "UpdatedTime": "2024-08-12T09:47:36.959Z",
+                "__v": 0,
+                "details": [
+                    {
+                        "_id": "66b9da92a8fcf2846e0316d4",
+                        "pvid": "66b9da38a8fcf2846e0316ba",
+                        "quantity": 100,
+                        "images": [
+                            "img-1723456146140-514253634.png"
+                        ],
+                        "desc": "<ul><li>Size: 6, Brand: Puma, Color: white</li></ul><p><br></p>",
+                        "price": 12001,
+                        "sku": " USG-07-02",
+                        "tags": [
+                            "puma 6 white"
+                        ],
+                        "readyToShip": true,
+                        "freeShipping": true,
+                        "data": [
+                            {
+                                "price": "2000",
+                                "minQuantity": "1",
+                                "currency": "Rs",
+                                "_id": "66b9da92a8fcf2846e0316d5"
+                            }
+                        ],
+                        "Status": "ACTIVE",
+                        "CreatedTime": "2024-08-12T09:49:06.166Z",
+                        "UpdatedTime": "2024-08-12T09:49:06.166Z",
+                        "__v": 0
+                    }
+                ]
+            },
+            {
+                "_id": "66b9da38a8fcf2846e0316bc",
+                "pid": "66b9da38a8fcf2846e0316b2",
+                "varients": [
+                    {
+                        "Size": "6",
+                        "Brand": "nike",
+                        "Color": "white"
+                    }
+                ],
+                "Status": "DRAFT",
+                "CreatedTime": "2024-08-12T09:47:36.981Z",
+                "UpdatedTime": "2024-08-12T09:47:36.981Z",
+                "__v": 0,
+                "details": [
+                    {
+                        "_id": "66b9da9fa8fcf2846e0316da",
+                        "pvid": "66b9da38a8fcf2846e0316bc",
+                        "quantity": 1000,
+                        "images": [
+                            "img-1723458231885-485131421.png"
+                        ],
+                        "desc": "",
+                        "price": 300,
+                        "sku": " USG-07-04",
+                        "tags": [
+                            "6 nike white"
+                        ],
+                        "readyToShip": true,
+                        "freeShipping": true,
+                        "data": [
+                            {
+                                "price": "10",
+                                "minQuantity": "1",
+                                "currency": "$",
+                                "_id": "66b9e2b7a8fcf2846e03183d"
+                            }
+                        ],
+                        "Status": "INACTIVE",
+                        "CreatedTime": "2024-08-12T09:49:19.794Z",
+                        "UpdatedTime": "2024-08-12T09:49:19.794Z",
+                        "__v": 0
+                    }
+                ]
+            },
+            {
+                "_id": "66b9da38a8fcf2846e0316be",
+                "pid": "66b9da38a8fcf2846e0316b2",
+                "varients": [
+                    {
+                        "Size": "6",
+                        "Brand": "nike",
+                        "Color": "black"
+                    }
+                ],
+                "Status": "DRAFT",
+                "CreatedTime": "2024-08-12T09:47:36.988Z",
+                "UpdatedTime": "2024-08-12T09:47:36.988Z",
+                "__v": 0,
+                "details": [
+                    {
+                        "_id": "66b9dadda8fcf2846e0316e0",
+                        "pvid": "66b9da38a8fcf2846e0316be",
+                        "quantity": 50,
+                        "images": [
+                            "img-1723456221173-992562991.png"
+                        ],
+                        "desc": "<ul><li>Size: 6, Brand: nike, Color: black</li></ul><p><br></p>",
+                        "price": 2000,
+                        "sku": " USG-07-02",
+                        "tags": [
+                            "puma 6 white"
+                        ],
+                        "readyToShip": true,
+                        "freeShipping": false,
+                        "data": [
+                            {
+                                "price": " 1000",
+                                "minQuantity": "1",
+                                "currency": "$",
+                                "_id": "66b9dadda8fcf2846e0316e1"
+                            }
+                        ],
+                        "Status": "ACTIVE",
+                        "CreatedTime": "2024-08-12T09:50:21.181Z",
+                        "UpdatedTime": "2024-08-12T09:50:21.181Z",
+                        "__v": 0
+                    }
+                ]
+            },
+            {
+                "_id": "66b9da38a8fcf2846e0316c0",
+                "pid": "66b9da38a8fcf2846e0316b2",
+                "varients": [
+                    {
+                        "Size": "7",
+                        "Brand": "Puma",
+                        "Color": "white"
+                    }
+                ],
+                "Status": "DRAFT",
+                "CreatedTime": "2024-08-12T09:47:36.994Z",
+                "UpdatedTime": "2024-08-12T09:47:36.994Z",
+                "__v": 0,
+                "details": [
+                    {
+                        "_id": "66b9db33a8fcf2846e0316e6",
+                        "pvid": "66b9da38a8fcf2846e0316c0",
+                        "quantity": 100,
+                        "images": [
+                            "img-1723456307651-317200205.png"
+                        ],
+                        "desc": "<ul><li>Size: 7, Brand: Puma, Color: white</li></ul><p><br></p>",
+                        "price": 4000,
+                        "sku": " USG-07-02",
+                        "tags": [
+                            "puma white 7"
+                        ],
+                        "readyToShip": true,
+                        "freeShipping": true,
+                        "data": [
+                            {
+                                "price": " 1000",
+                                "minQuantity": "1",
+                                "currency": "Rs",
+                                "_id": "66b9db33a8fcf2846e0316e7"
+                            }
+                        ],
+                        "Status": "ACTIVE",
+                        "CreatedTime": "2024-08-12T09:51:47.658Z",
+                        "UpdatedTime": "2024-08-12T09:51:47.658Z",
+                        "__v": 0
+                    }
+                ]
+            },
+            {
+                "_id": "66b9da39a8fcf2846e0316c2",
+                "pid": "66b9da38a8fcf2846e0316b2",
+                "varients": [
+                    {
+                        "Size": "7",
+                        "Brand": "Puma",
+                        "Color": "black"
+                    }
+                ],
+                "Status": "DRAFT",
+                "CreatedTime": "2024-08-12T09:47:37.002Z",
+                "UpdatedTime": "2024-08-12T09:47:37.002Z",
+                "__v": 0,
+                "details": [
+                    {
+                        "_id": "66b9db74a8fcf2846e0316ec",
+                        "pvid": "66b9da39a8fcf2846e0316c2",
+                        "quantity": 300,
+                        "images": [
+                            "img-1723456372968-402999733.png"
+                        ],
+                        "desc": "<ul><li>Size: 7, Brand: Puma, Color: black</li></ul><p><br></p>",
+                        "price": 89999,
+                        "sku": " USG-07-03",
+                        "tags": [
+                            "puma black 7"
+                        ],
+                        "readyToShip": false,
+                        "freeShipping": true,
+                        "data": [
+                            {
+                                "price": "2000",
+                                "minQuantity": "50",
+                                "currency": "Rs",
+                                "_id": "66b9db74a8fcf2846e0316ed"
+                            }
+                        ],
+                        "Status": "ACTIVE",
+                        "CreatedTime": "2024-08-12T09:52:52.976Z",
+                        "UpdatedTime": "2024-08-12T09:52:52.976Z",
+                        "__v": 0
+                    }
+                ]
+            },
+            {
+                "_id": "66b9da39a8fcf2846e0316c4",
+                "pid": "66b9da38a8fcf2846e0316b2",
+                "varients": [
+                    {
+                        "Size": "7",
+                        "Brand": "nike",
+                        "Color": "white"
+                    }
+                ],
+                "Status": "DRAFT",
+                "CreatedTime": "2024-08-12T09:47:37.009Z",
+                "UpdatedTime": "2024-08-12T09:47:37.009Z",
+                "__v": 0,
+                "details": [
+                    {
+                        "_id": "66b9db80a8fcf2846e0316f2",
+                        "pvid": "66b9da39a8fcf2846e0316c4",
+                        "quantity": 0,
+                        "images": [],
+                        "desc": "",
+                        "price": 0,
+                        "sku": "",
+                        "tags": [],
+                        "readyToShip": false,
+                        "freeShipping": false,
+                        "data": [
+                            {
+                                "price": "",
+                                "minQuantity": "",
+                                "currency": "",
+                                "_id": "66b9db80a8fcf2846e0316f3"
+                            }
+                        ],
+                        "Status": "INACTIVE",
+                        "CreatedTime": "2024-08-12T09:53:04.439Z",
+                        "UpdatedTime": "2024-08-12T09:53:04.439Z",
+                        "__v": 0
+                    }
+                ]
+            },
+            {
+                "_id": "66b9da39a8fcf2846e0316c6",
+                "pid": "66b9da38a8fcf2846e0316b2",
+                "varients": [
+                    {
+                        "Size": "6",
+                        "Brand": "Puma",
+                        "Color": "black"
+                    }
+                ],
+                "Status": "DRAFT",
+                "CreatedTime": "2024-08-12T09:47:37.027Z",
+                "UpdatedTime": "2024-08-12T09:47:37.027Z",
+                "__v": 0,
+                "details": [
+                    {
+                        "_id": "66b9db8fa8fcf2846e0316f8",
+                        "pvid": "66b9da39a8fcf2846e0316c6",
+                        "quantity": 300000,
+                        "images": [
+                            "img-1723458329463-840113149.png"
+                        ],
+                        "desc": "",
+                        "price": 20000000,
+                        "sku": "UGG-BB-PUR-06",
+                        "tags": [
+                            "6 puma black"
+                        ],
+                        "readyToShip": true,
+                        "freeShipping": true,
+                        "data": [
+                            {
+                                "price": "199",
+                                "minQuantity": "50",
+                                "currency": "Rs.",
+                                "_id": "66b9e319a8fcf2846e031866"
+                            }
+                        ],
+                        "Status": "INACTIVE",
+                        "CreatedTime": "2024-08-12T09:53:19.415Z",
+                        "UpdatedTime": "2024-08-12T09:53:19.415Z",
+                        "__v": 0
+                    }
+                ]
+            },
+            {
+                "_id": "66b9da39a8fcf2846e0316c8",
+                "pid": "66b9da38a8fcf2846e0316b2",
+                "varients": [
+                    {
+                        "Size": "7",
+                        "Brand": "nike",
+                        "Color": "black"
+                    }
+                ],
+                "Status": "DRAFT",
+                "CreatedTime": "2024-08-12T09:47:37.032Z",
+                "UpdatedTime": "2024-08-12T09:47:37.032Z",
+                "__v": 0,
+                "details": [
+                    {
+                        "_id": "66b9db9aa8fcf2846e0316fe",
+                        "pvid": "66b9da39a8fcf2846e0316c8",
+                        "quantity": 0,
+                        "images": [],
+                        "desc": "",
+                        "price": 0,
+                        "sku": "",
+                        "tags": [],
+                        "readyToShip": false,
+                        "freeShipping": false,
+                        "data": [
+                            {
+                                "price": "",
+                                "minQuantity": "",
+                                "currency": "",
+                                "_id": "66b9db9aa8fcf2846e0316ff"
+                            }
+                        ],
+                        "Status": "INACTIVE",
+                        "CreatedTime": "2024-08-12T09:53:30.238Z",
+                        "UpdatedTime": "2024-08-12T09:53:30.238Z",
+                        "__v": 0
+                    }
+                ]
+            },
+            {
+                "_id": "66b9da39a8fcf2846e0316ca",
+                "pid": "66b9da38a8fcf2846e0316b2",
+                "varients": [
+                    {
+                        "Size": "8",
+                        "Brand": "Puma",
+                        "Color": "white"
+                    }
+                ],
+                "Status": "DRAFT",
+                "CreatedTime": "2024-08-12T09:47:37.041Z",
+                "UpdatedTime": "2024-08-12T09:47:37.041Z",
+                "__v": 0,
+                "details": [
+                    {
+                        "_id": "66b9dbeda8fcf2846e031704",
+                        "pvid": "66b9da39a8fcf2846e0316ca",
+                        "quantity": 300,
+                        "images": [
+                            "img-1723456493937-156485691.png"
+                        ],
+                        "desc": "<ul><li>Size: 8, Brand: Puma, Color: white</li></ul><p><br></p>",
+                        "price": 10000,
+                        "sku": " USG-07-04",
+                        "tags": [
+                            "8 puma white"
+                        ],
+                        "readyToShip": false,
+                        "freeShipping": true,
+                        "data": [
+                            {
+                                "price": "1000",
+                                "minQuantity": "2",
+                                "currency": "€",
+                                "_id": "66b9dbeda8fcf2846e031705"
+                            }
+                        ],
+                        "Status": "ACTIVE",
+                        "CreatedTime": "2024-08-12T09:54:53.944Z",
+                        "UpdatedTime": "2024-08-12T09:54:53.944Z",
+                        "__v": 0
+                    }
+                ]
+            },
+            {
+                "_id": "66b9da39a8fcf2846e0316cc",
+                "pid": "66b9da38a8fcf2846e0316b2",
+                "varients": [
+                    {
+                        "Size": "8",
+                        "Brand": "Puma",
+                        "Color": "black"
+                    }
+                ],
+                "Status": "DRAFT",
+                "CreatedTime": "2024-08-12T09:47:37.047Z",
+                "UpdatedTime": "2024-08-12T09:47:37.047Z",
+                "__v": 0,
+                "details": [
+                    {
+                        "_id": "66b9dbf8a8fcf2846e03170a",
+                        "pvid": "66b9da39a8fcf2846e0316cc",
+                        "quantity": 0,
+                        "images": [],
+                        "desc": "",
+                        "price": 0,
+                        "sku": "",
+                        "tags": [],
+                        "readyToShip": false,
+                        "freeShipping": false,
+                        "data": [
+                            {
+                                "price": "",
+                                "minQuantity": "",
+                                "currency": "",
+                                "_id": "66b9dbf8a8fcf2846e03170b"
+                            }
+                        ],
+                        "Status": "INACTIVE",
+                        "CreatedTime": "2024-08-12T09:55:04.355Z",
+                        "UpdatedTime": "2024-08-12T09:55:04.355Z",
+                        "__v": 0
+                    }
+                ]
+            },
+            {
+                "_id": "66b9da39a8fcf2846e0316ce",
+                "pid": "66b9da38a8fcf2846e0316b2",
+                "varients": [
+                    {
+                        "Size": "8",
+                        "Brand": "nike",
+                        "Color": "white"
+                    }
+                ],
+                "Status": "DRAFT",
+                "CreatedTime": "2024-08-12T09:47:37.054Z",
+                "UpdatedTime": "2024-08-12T09:47:37.054Z",
+                "__v": 0,
+                "details": [
+                    {
+                        "_id": "66b9dc56a8fcf2846e031710",
+                        "pvid": "66b9da39a8fcf2846e0316ce",
+                        "quantity": 399,
+                        "images": [
+                            "img-1723456598986-397963425.png"
+                        ],
+                        "desc": "<ul><li>Size: 8, Brand: nike, Color: white</li></ul><p><br></p>",
+                        "price": 2000,
+                        "sku": " USG-07-04",
+                        "tags": [
+                            "nike 8 white"
+                        ],
+                        "readyToShip": true,
+                        "freeShipping": true,
+                        "data": [
+                            {
+                                "price": " 1000",
+                                "minQuantity": "5",
+                                "currency": "Rs",
+                                "_id": "66b9dc56a8fcf2846e031711"
+                            }
+                        ],
+                        "Status": "INACTIVE",
+                        "CreatedTime": "2024-08-12T09:56:38.994Z",
+                        "UpdatedTime": "2024-08-12T09:56:38.994Z",
+                        "__v": 0
+                    }
+                ]},{  "_id": "66b9da39a8fcf2846e0316d0",
+                "pid": "66b9da38a8fcf2846e0316b2",
+                "varients": [
+                    {
+                        "Size": "8",
+                        "Brand": "nike",
+                        "Color": "black"
+                    }
+                ], "Status": "DRAFT",
+                "CreatedTime": "2024-08-12T09:47:37.062Z",
+                "UpdatedTime": "2024-08-12T09:47:37.062Z",
+                "__v": 0,
+                "details": [
+                    {
+                        "_id": "66b9dca7a8fcf2846e031716",
+                        "pvid": "66b9da39a8fcf2846e0316d0",
+                        "quantity": 500,
+                        "images": [
+                            "img-1723456679052-296174768.png"
+                        ],
+                        "desc": "<ul><li>Size: 8, Brand: nike, Color: black</li></ul><p><br></p>",
+                        "price": 2000,
+                        "sku": " USG-07-04",
+                        "tags": [
+                            "8 nike black"
+                        ],
+                        "readyToShip": false,
+                        "freeShipping": false,
+                        "data": [{
+                                "price": " 1000",
+                                "minQuantity": "5",
+                                "currency": "Rs",
+                                "_id": "66b9dca7a8fcf2846e031717"
+                            }
+                        ],"Status": "ACTIVE",
+                        "CreatedTime": "2024-08-12T09:57:59.059Z",
+                        "UpdatedTime": "2024-08-12T09:57:59.059Z",
+                        "__v": 0
+                    }]}]}] in this case it is like this and my invalide varients are thoose whose price and quantiy is 0 so apply that filter functionality init
+
+
+
+
+ https://www.flipkart.com/poco-m6-pro-5g-forest-green-256-gb/p/itm5600e7d7f5ddc?pid=MOBGVGDQ5JZ9YX2G&lid=LSTMOBGVGDQ5JZ9YX2GMH9CUM&marketplace=FLIPKART&sattr[]=color&sattr[]=storage&sattr[]=ram&st=ram

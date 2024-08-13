@@ -343,6 +343,7 @@ export const getActiveProductsById = async (req, res) => {
       pid: { $in: productObjectIds },
     });
 
+    console.log("variants fff", variants);
     const variantIds = variants.map((variant) => variant._id);
 
     const variantDetails = await varientsDetails.find({
