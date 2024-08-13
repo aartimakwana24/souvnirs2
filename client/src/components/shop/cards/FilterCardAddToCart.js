@@ -154,7 +154,7 @@ function FilterCardAddToCart({
     <div className="filter-card">
       <h6 className="text-info fw-bold">{heading}</h6>
       <div className="filter-options">
-        {/* {filters.map((filter, index) => (
+        {filters.map((filter, index) => (
           <div key={index} className="filter-option">
             <input
               type="radio"
@@ -174,9 +174,8 @@ function FilterCardAddToCart({
               {filter.filterName}
             </label>
           </div>
-        ))} */}
-        {console.log("attributes in filter ", attributes)}
-        {Array.isArray(attributes) &&
+        ))}
+        {/* {Array.isArray(attributes) &&
           attributes.map((attribute) => (
             <div>
               {Array.isArray(attribute) &&
@@ -205,7 +204,7 @@ function FilterCardAddToCart({
                   );
                 })}
             </div>
-          ))}
+          ))} */}
       </div>
     </div>
   );
